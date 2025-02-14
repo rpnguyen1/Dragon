@@ -1,6 +1,7 @@
 import {tiny, defs} from './examples/common.js';
 import {Hermit_spline, Curve_Shape }from './hermit.js';
 import {SpringMass }from './simulation.js';
+import { Fabrik } from './fabrik.js'; // Forward And Backward Reaching Inverse Kinematics just for testing 
 
 
 // Pull these names into this module's scope for convenience:
@@ -27,16 +28,6 @@ const DragonDemoBase = defs.DragonDemoBase =
         // constructor(): Scenes begin by populating initial values like the Shapes and Materials they'll need.
         this.hover = this.swarm = false;
 
-        // Debug wall (for easier placement)
-        this._debug_xPos= 1;
-        this._debug_zPos = 1;
-        this._debug_length = 1;
-        this._debug_height = 1;
-        this._debug_material = 0;
-        this._debug_orientation = 0;
-        this._debug_precision = 1;
-        this._debug = false;
-
 
         // At the beginning of our program, load one of each of these shape
         // definitions onto the GPU.  NOTE:  Only do this ONCE per shape it
@@ -47,7 +38,9 @@ const DragonDemoBase = defs.DragonDemoBase =
           'box'  : new defs.Cube(),
           'ball' : new defs.Subdivision_Sphere( 4 ),
           'axis' : new defs.Axis_Arrows(),
-          'cylinder' : new defs.Shape_From_File("assets/teapot.obj"),
+          'cylinder' : new defs.Shape_From_File("assets/dragon_body.obj"), // these dragon models are temporary!!!!!
+          'head' : new defs.Shape_From_File("assets/dragon.obj"),
+          'teapot' : new defs.Shape_From_File("assets/teapot.obj"),
         };
 
         // *** Materials: ***  A "material" used on individual shapes specifies all fields
@@ -67,7 +60,9 @@ const DragonDemoBase = defs.DragonDemoBase =
         this.materials.plastic = { shader: phong, ambient: .2, diffusivity: 1, specularity: .5, color: color( .9,.5,.9,1 ) }
         this.materials.metal   = { shader: phong, ambient: .2, diffusivity: 1, specularity:  1, color: color( .9,.5,.9,1 ) }
         this.materials.rgb = { shader: fake_bump, ambient: .5, texture: new Texture( "assets/rgb.jpg" ) }
-        
+        this.materials.dragon = { shader: fake_bump, ambient: .5, texture: new Texture( "assets/EDragon_Body.png" ) }
+        this.materials.invisible = { shader: phong, ambient: .2, diffusivity: 1, specularity: .5, color: color( 0, 0, 0, 0 ) }
+
         this.ball_location = vec3(1, 1, 1);
         this.ball_radius = 0.25;
 
@@ -97,6 +92,9 @@ const DragonDemoBase = defs.DragonDemoBase =
         const point = this.spline.computePoint(0.5);
         console.log(point); // { x: 0.5, y: 0.5, z: 0.5 }
 
+        /************************************* Particle Spring dragon implementation ****************************************/
+
+
 
         // Use a smaller spacing for a natural chain (e.g., 0.5 units)
         const numParticles = 20;
@@ -125,7 +123,18 @@ const DragonDemoBase = defs.DragonDemoBase =
         this.particleSystem.createSprings(numParticles - 1);
         for (let i = 0; i < numParticles - 1; i++) {
           let { ks, kd } = this.computeSpringConstants(i, numParticles);
-          this.particleSystem.link(i, i, i + 1, ks, kd, spacing);
+          if (i == 0) {
+            this.particleSystem.link(i, i, i + 1, ks, kd, spacing, this.shapes.ball, this.materials.invisible, false);
+            // this.particleSystem.link(i, i, i + 1, ks, kd, spacing, this.shapes.cylinder, this.materials.dragon);
+
+          } else if (i == 1){
+            this.particleSystem.link(i, i, i + 1, ks, kd, spacing, this.shapes.teapot, this.materials.rgb, false);
+            // this.particleSystem.link(i, i, i + 1, ks, kd, spacing, this.shapes.cylinder, this.materials.dragon);
+
+          } else{
+            this.particleSystem.link(i, i, i + 1, ks, kd, spacing, this.shapes.teapot, this.materials.rgb, true);
+
+          }
         }
 
         this.particleSystem.setGround(50000, 500000)
@@ -135,6 +144,11 @@ const DragonDemoBase = defs.DragonDemoBase =
 
         this.particleSystem.isRunning = true;
         this.particleSystem.t_sim = 0;
+
+
+        /************************************* Fabrik dragon implementation ****************************************/
+        // Suppose you want a chain starting at (0, 10, 0) with 10 segments:
+        this.dragonTail = new Fabrik(vec3(0, 10, 0), 20, 3);
       }
 
       // Mass distribution: Heavier in the middle, tapering at both ends.
@@ -174,6 +188,8 @@ const DragonDemoBase = defs.DragonDemoBase =
         }
         return { ks, kd };
       }
+
+
       render_animation( caller )
       {                                                // display():  Called once per frame of animation.  We'll isolate out
         // the code that actually draws things into Assignment2, a
@@ -207,25 +223,6 @@ const DragonDemoBase = defs.DragonDemoBase =
         // !!! Light changed here
         const light_position = vec4(20, 20, 20, 1.0);
         this.uniforms.lights = [ defs.Phong_Shader.light_source( light_position, color( 1,1,1,1 ), 1000000 ) ];
-
-        // draw axis arrows.
-        // Debug
-        if (this._debug){
-          let _debug_transform = Mat4.translation(this._debug_xPos, this._debug_height/2, this._debug_zPos).times(Mat4.scale(this._debug_length/2, this._debug_height/2, 0.25));
-          if (this._debug_orientation % 3 == 0) {
-              _debug_transform = Mat4.translation(this._debug_xPos, this._debug_height/2, this._debug_zPos).times(Mat4.scale(0.25, this._debug_height/2, this._debug_length/2));
-          }
-          if (this._debug_orientation % 3 == 1) {
-              _debug_transform = Mat4.translation(this._debug_xPos, 0, this._debug_zPos).times(Mat4.scale(this._debug_height/2, 1, this._debug_length/2));
-          }
-          // this.shapes.cube.draw(context, program_state, _debug_transform, shadow_pass? this.pic2 : this.pure);
-          this.shapes.ball.draw( caller, this.uniforms, _debug_transform, this.materials.plastic);
-  
-          console.log("x: " + this._debug_xPos + "  z:  " + this._debug_zPos + "  length:  " + this._debug_length + "  height:  " + this._debug_height + "  mat:  " + this._debug_material + "  precision:  " + this._debug_precision);
-          // console.log("room0.create_wall_z("+this._debug_xPos+","+ this._debug_zPos+"," +this._debug_length+","+ this._debug_height+", this.Wall); " );
-          
-        }
-
       }
     }
 
@@ -263,40 +260,26 @@ export class DragonDemo extends DragonDemoBase
     // translation(), scale(), and rotation() to generate matrices, and the
     // function times(), which generates products of matrices.
 
-    const blue = color( 0,0,1,1 ), yellow = color( 1,0.7,0,1 ), 
-          wall_color = color( 0.7, 1.0, 0.8, 1 ), 
-          blackboard_color = color( 0.2, 0.2, 0.2, 1 );
+    const blue = color( 0,0,1,1 ), yellow = color( 1,0.7,0,1 );
 
     const t = this.t = this.uniforms.animation_time/1000;
 
     // !!! Draw ground
-    let floor_transform = Mat4.translation(0, 0, 0).times(Mat4.scale(10, 0.01, 10));
+    let floor_transform = Mat4.translation(0, 0, 0).times(Mat4.scale(100, 0.01, 100));
     this.shapes.box.draw( caller, this.uniforms, floor_transform, { ...this.materials.plastic, color: yellow } );
-
-    // TODO: you should draw scene here.
-    // TODO: you can change the wall and board as needed.
-    let wall_transform = Mat4.translation(0, 5, -1.2).times(Mat4.scale(6, 5, 0.1));
-    this.shapes.box.draw( caller, this.uniforms, wall_transform, { ...this.materials.plastic, color: wall_color } );
-    let board_transform = Mat4.translation(3, 6, -1).times(Mat4.scale(2.5, 2.5, 0.1));
-    this.shapes.box.draw( caller, this.uniforms, board_transform, { ...this.materials.plastic, color: blackboard_color } );
-    
-
 
 
 
     // this code is to attach an object to the front of the camera
-    let base_transform_r = Mat4.identity().times(Mat4.scale(0.2,0.2,0.2).times(Mat4.translation(2.5,-1.5,-50)));
+    let base_transform_r = Mat4.identity().times(Mat4.scale(0.2,0.2,0.2).times(Mat4.translation(2.5,-1.5,-100)));
     this.shapes.cylinder.draw(caller, this.uniforms, this.uniforms.camera_transform.times(base_transform_r), { ...this.materials.metal, color: yellow });
-    
     let final_transform = this.uniforms.camera_transform.times(base_transform_r);
-
-    // Extract translation components (assuming final_transform is a 4x4 matrix)
     let x = final_transform[0][3];
     let y = final_transform[1][3];
-    let z = final_transform[2][3];
+    let z = final_transform[2][3]; // could just use tovec3 to convert matrix to vector3
     
 
-    // code for the delay startup
+    // code for the delay startup (prevent wacky lag in the beginning destroying particles)
     let point; 
     let delay = 1;
     if (t < delay) {
@@ -318,6 +301,16 @@ export class DragonDemo extends DragonDemoBase
     // this.particleSystem.setParticle(0, 1000, [x, y, z, 0, 0, 0]); // uncomment to make dragon follow camera
     this.particleSystem.setParticle(0, 10, [point[0], point[1], point[2], 0, 0, 0]); // Dragon follows spline
     this.particleSystem.draw(caller, this.uniforms, this.shapes, this.materials);
+ 
+ 
+    // Fabrik Dragon test
+
+    // Set a target for the tail's tip (e.g., this could be animated over time)
+    this.dragonTail.setTarget(vec3(x, y, z)); // Follow camera
+    // this.dragonTail.setTarget(vec3(point2[0], point2[1], point2[2]));
+    this.dragonTail.update(10);  // Run several iterations to smooth out the IK solution
+    // In your draw routine, render the chain:
+    this.dragonTail.display(caller, this.uniforms, this.shapes, this.materials);
   }
 
   render_controls()
@@ -330,44 +323,5 @@ export class DragonDemo extends DragonDemoBase
 
 
     // TODO: You can add your button events for debugging. (optional)
-    // This is my debug code for placing objects in the scene easier. 
-    // Could be updated to include splines and stuff
-    this.key_triggered_button( "Debug", [ "Shift", "D" ], null );
-    this.new_line();
-
-    this.control_panel.innerHTML += "Debug controls for placing objects during play - see console for position/rotation/scale data";
-    this.key_triggered_button("Toggle Debug Box", ["Shift", "G"],
-      () => this._debug = !this._debug);
-  this.new_line();
-  this.key_triggered_button("-_debug_zPos", ["Shift", "W"],
-      () => this._debug_zPos -= this._debug_precision);
-  this.key_triggered_button("+_debug_zPos",   ["Shift", "S"],
-      () => this._debug_zPos += this._debug_precision);
-      this.new_line();
-  this.key_triggered_button("-_debug_xPos",   ["Shift", "A"],
-      () => this._debug_xPos -= this._debug_precision);
-  this.key_triggered_button("+_debug_xPos",  ["Shift", "D"],
-      () => this._debug_xPos += this._debug_precision);
-      this.new_line();
-      this.new_line();
-  this.key_triggered_button("-_debug_length",  ["r"],
-      () => this._debug_length -= this._debug_precision);
-  this.key_triggered_button("+_debug_length",  ["q"],
-      () => this._debug_length += this._debug_precision);
-      this.new_line();
-  this.key_triggered_button("-_debug_height",  ["Shift","R"],
-      () => this._debug_height -= this._debug_precision);
-  this.key_triggered_button("+_debug_height",  ["Shift","Q"],
-      () => this._debug_height += this._debug_precision);
-      this.new_line();
-      this.new_line();
-  this.key_triggered_button("-_debug_precision",  ["Shift","J"],
-      () => this._debug_precision *= 2);
-  this.key_triggered_button("+_debug_precision",  ["Shift","K"],
-      () => this._debug_precision /= 2);
-      this.new_line();
-  this.key_triggered_button("-_debug_orientation",  ["Shift","O"],
-      () => this._debug_orientation += 1);
-      this.new_line();
   }
 }

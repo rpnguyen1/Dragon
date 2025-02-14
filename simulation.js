@@ -92,37 +92,47 @@ const Part_two_spring_base = defs.Part_two_spring_base =
 
 // Spring class 
 class Particle{
-  constructor(mass, position, velocity, force){
+  constructor(mass, position, velocity, force, model, material){
     this.mass = mass;
     this.position = position;
     this.velocity = velocity;
     this.force = force;
     this.previousPosition = null;
+    this.model = model;
+    this.material = material;
   }
-  update(mass, position, velocity, force){
+  update(mass, position, velocity, force, model, material){
     this.mass = mass;
     this.position = position;
     this.velocity = velocity;
     this.force = force;
+    this.model = model;
+    this.material = material
   }
 }
 
 class Spring{
-  constructor(particle_i, particle_j, ks, kd, l, force){
+  constructor(particle_i, particle_j, ks, kd, l, force, model, material, doScale){
     this.pi = particle_i;
     this.pj = particle_j;
     this.ks = ks;
     this.kd = kd;
     this.l = l;
     this.veForce = force;
+    this.model = model;
+    this.material = material;
+    this.doScale = doScale;
   }
 
-  update(particle_i, particle_j, ks, kd, l){
+  update(particle_i, particle_j, ks, kd, l, model, material, doScale){
     this.pi = particle_i;
     this.pj = particle_j;
     this.ks = ks;
     this.kd = kd;
     this.l = l;
+    this.model = model;
+    this.material = material;
+    this.doScale = doScale;
   }
 
 }
@@ -169,7 +179,7 @@ export class SpringMass {
     for (let i = 0; i < num; i++) {
       this.particles.push(
         // create a default particle?
-        new Particle(1, [0, 0, 0], [0, 0, 0], [0, 0, 0])
+        new Particle(1, [0, 0, 0], [0, 0, 0], [0, 0, 0], null, null)
         // mass: 1,  // default mass
         // position: [0, 0, 0], // default position
         // velocity: [0, 0, 0], // default velocity
@@ -178,11 +188,13 @@ export class SpringMass {
   }
 
 // particle <index> <mass> <x y z vx vy vz>
-  setParticle(id, mass, transform){
+  setParticle(id, mass, transform, model, material){
     if (this.particles[id]) {
       this.particles[id].mass = mass;
       this.particles[id].position = transform.slice(0, 3); // Position
       this.particles[id].velocity = transform.slice(3, 6); // Velocity
+      this.model = model;
+      this.material = material;
     } else {
       console.log("Invalid particle index");
     }
@@ -204,15 +216,15 @@ export class SpringMass {
         // ks: 1,    // Spring constant
         // kd: 0.1,  // Damping constant
         // length: 1 // Rest length
-        new Spring(-1, -1, 1, 0, 1, 1, [0, 0, 0])
+        new Spring(-1, -1, 1, 0, 1, 1, [0, 0, 0], null, null)
       );
     }
   }
 
   //link <sindex> <pindex1> <pindex2> <ks> <kd> <length>
-  link(sid, pid1, pid2, ks, kd, length){
+  link(sid, pid1, pid2, ks, kd, length, model, material, doScale){
     if (this.springs[sid]) {
-      this.springs[sid].update(pid1,pid2,ks,kd,length);
+      this.springs[sid].update(pid1,pid2,ks,kd,length, model, material, doScale);
       // this.springs[sid] = {
       //   pid1,
       //   pid2,
@@ -739,23 +751,6 @@ resolveGroundCollisions(t_step) {
   }
 
   verletIntegration(timestep) {
-    // this.particles.forEach((particle, index) => {
-
-  
-    //   // Update position based on velocity
-    //   for (let i = 0; i < 3; i++) {
-    //     // Update position 
-    //     let newPosition = particle.position[i] + particle.velocity[i] * timestep + 0.5 * (particle.force[i] / particle.mass) * timestep * timestep;
-    //     particle.position[i] = newPosition;
-    //   }
-
-    //   // Update velocity 
-    //   for (let i = 0; i < 3; i++) {
-    //       // particle.velocity[i] += timestep * ((particle.force[i] * timestep) / particle.mass);
-    //       particle.velocity[i] += (particle.force[i] * timestep) / particle.mass;
-    //   }
-  
-    // });
     this.particles.forEach(particle => {
       if (!particle.previousPosition) {
         // Initialize previous position for the first step
@@ -819,8 +814,12 @@ resolveGroundCollisions(t_step) {
       model_transform.pre_multiply(Mat4.translation(pos[0], pos[1], pos[2]));
       // let transform = Mat4.translation(...particle.position)
       //   .times(Mat4.scale(0.1, 0.1, 0.1)); // Adjust size if needed
+      if (particle.model == null) {
+        shapes.ball.draw(caller, uniforms, model_transform, { ...materials.metal, color: blue });        
+      } else{
+        particle.model.draw(caller, uniforms, model_transform, particle.material);        
+      }
 
-      shapes.ball.draw(caller, uniforms, model_transform, { ...materials.metal, color: blue });
     }
 
     // Draw springs
@@ -835,7 +834,13 @@ resolveGroundCollisions(t_step) {
         const len = (p2.minus(p1)).norm();
         const center = (p1.plus(p2).times(0.5));
 
-        let model_transform = Mat4.scale(0.5, len / 2, 0.5);
+        // let model_transform = Mat4.scale(0.5, len / 2, 0.5);
+        let model_transform;
+        if (spring.doScale) {
+          model_transform = Mat4.scale(1, len / 2, 1);
+        } else{
+          model_transform = Mat4.scale(1, 1, 1);
+        }
 
         const p = p1.minus(p2).normalized();
         let v = vec3(0, 1, 0);
@@ -848,33 +853,17 @@ resolveGroundCollisions(t_step) {
         const theta = Math.acos(v.dot(p));
         model_transform.pre_multiply(Mat4.rotation(theta, w[0], w[1], w[2]));
         model_transform.pre_multiply(Mat4.translation(center[0], center[1], center[2]));
-        shapes.cylinder.draw(caller, uniforms, model_transform, { ...materials.metal, color: white });
 
-        // let midpoint = [
-        //   (p1[0] + p2[0]) / 2,
-        //   (p1[1] + p2[1]) / 2,
-        //   (p1[2] + p2[2]) / 2
-        // ];
+        if (spring.model == null) {
+          shapes.cylinder.draw(caller, uniforms, model_transform, { ...materials.metal, color: white });
+        } else{
+          spring.model.draw(caller, uniforms, model_transform, spring.material);
 
-        // let delta = [
-        //   p2[0] - p1[0],
-        //   p2[1] - p1[1],
-        //   p2[2] - p1[2]
-        // ];
-        // let length = Math.sqrt(delta[0] ** 2 + delta[1] ** 2 + delta[2] ** 2);
-
-        // let p1v = vec3(...this.particles[spring.pi].position);
-        // let p2v = vec3(...this.particles[spring.pj].position);
-
-        // let rotation = Mat4.look_at(p1v, p2v, vec3(0, 1, 0)).times(Mat4.inverse(Mat4.translation(0, 0, 0)));
-
-        // let transform = Mat4.translation(...midpoint)
-        //   .times(rotation)
-        //   .times(Mat4.scale(length / 2, 0.02, 0.02)); // Scale to match spring length
-
-        // shapes.box.draw(caller, uniforms, transform, { ...materials.metal, color: blue });
+        }
       }
     }
+
+
   }
 
 
