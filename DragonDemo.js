@@ -1,5 +1,4 @@
 import {tiny, defs} from './examples/common.js';
-// import {Movement_Controls_2} from './FirstPersonController.js' 
 import {Hermit_spline, Curve_Shape }from './hermit.js';
 import {SpringMass }from './simulation.js';
 
@@ -12,8 +11,8 @@ const { vec3, vec4, color, Mat4, Shape, Shader, Texture, Component } = tiny;
 const {Renderer, Entity, Camera, Light, Material} = defs
 
 export
-const Assignment2_base = defs.Assignment2_base =
-    class Assignment2_base extends Component
+const DragonDemoBase = defs.DragonDemoBase =
+    class DragonDemoBase extends Component
     {                                          
       // **My_Demo_Base** is a Scene that can be added to any display canvas.
       // This particular scene is broken up into two pieces for easier understanding.
@@ -29,15 +28,14 @@ const Assignment2_base = defs.Assignment2_base =
         this.hover = this.swarm = false;
 
         // Debug wall (for easier placement)
-        //create_wall_x(xPos, zPos, length, height, material) {
-          this._debug_xPos= 1;
-          this._debug_zPos = 1;
-          this._debug_length = 1;
-          this._debug_height = 1;
-          this._debug_material = 0;
-          this._debug_orientation = 0;
-          this._debug_precision = 1;
-          this._debug = false;
+        this._debug_xPos= 1;
+        this._debug_zPos = 1;
+        this._debug_length = 1;
+        this._debug_height = 1;
+        this._debug_material = 0;
+        this._debug_orientation = 0;
+        this._debug_precision = 1;
+        this._debug = false;
 
 
         // At the beginning of our program, load one of each of these shape
@@ -61,34 +59,19 @@ const Assignment2_base = defs.Assignment2_base =
         const tex_phong = new defs.Textured_Phong();
         const fake_bump = new defs.Fake_Bump_Map();
 
-        // this.shader = new defs.Shadow_Instanced_Shader (Light.NUM_LIGHTS);
-        // this.textured_shader = new defs.Shadow_Textured_Instanced_Shader (Light.NUM_LIGHTS);
+
     
-        // this.materials = {
-        //     food: new Material("Food", this.shader, { color: vec4(0.92, 0.22, 0.66, 1.0), diffuse: vec3(0.92, 0.22, 0.66), specular: vec3(1.0, 1.0, 1.0), smoothness: 32.0 }),
-        //     sea_sky: new defs.Material_From_File("Sea_Sky", this.textured_shader, "models/textured_obj/sea_sky_textured/sea_sky.mtl")
-        // }
-        this.materials = {
-          // sea_sky: new defs.Material_From_File("Sea_Sky", tex_phong, "assets/Leon_head.mtl"),
-        };
+
+        this.materials = {};
+
         this.materials.plastic = { shader: phong, ambient: .2, diffusivity: 1, specularity: .5, color: color( .9,.5,.9,1 ) }
         this.materials.metal   = { shader: phong, ambient: .2, diffusivity: 1, specularity:  1, color: color( .9,.5,.9,1 ) }
-        this.materials.rgb = { shader: tex_phong, ambient: .5, texture: new Texture( "assets/rgb.jpg" ) }
-        this.materials.leonALBD = { shader: fake_bump, ambient: .6, diffusivity: 0.5, specularity:  0.1, texture: new Texture( "assets/cha000_10_cm1_ALBD.png" ) }
-        this.materials.leonHairALBD = { shader: fake_bump, ambient: .6, diffusivity: 0.5, specularity:  0.1, texture: new Texture( "assets/HAIRALBD.png" ) }
-
+        this.materials.rgb = { shader: fake_bump, ambient: .5, texture: new Texture( "assets/rgb.jpg" ) }
+        
         this.ball_location = vec3(1, 1, 1);
         this.ball_radius = 0.25;
 
         // TODO: you should create a Spline class instance
-        // this.sun_dir = vec4(0.0, 5.0, 7.0, 0.0);
-        // this.sun = new Light({direction_or_position: this.sun_dir, color: vec3(0, 0, 0), diffuse: 0.6, specular: 0.1, attenuation_factor: 0.000001,
-        //                       shadow_map_width: 1024, shadow_map_height: 1024, casts_shadow: true});
-    
-        // this.camera = new Camera(vec3(0.0, 0.0, 40.0));
-    
-        // this.renderer = new Renderer();
-        // TODO: you should create the necessary shapes
         const controlPoints = [
           { x: -50, y: 10, z: 0 }, 
           { x: -50, y: 10, z: 50 }, 
@@ -107,17 +90,12 @@ const Assignment2_base = defs.Assignment2_base =
           { sx: -29, sy: 0, sz: 29 },  
       ];
 
-
         this.spline = new Hermit_spline(controlPoints, tangents);
         this.curve_fn = (t) => this.spline.computePoint(t)
         this.sample_cnt = 1000;
         this.curve = new Curve_Shape(this.curve_fn, this.sample_cnt);
         const point = this.spline.computePoint(0.5);
         console.log(point); // { x: 0.5, y: 0.5, z: 0.5 }
-
-
-
-
 
 
         // Use a smaller spacing for a natural chain (e.g., 0.5 units)
@@ -157,11 +135,6 @@ const Assignment2_base = defs.Assignment2_base =
 
         this.particleSystem.isRunning = true;
         this.particleSystem.t_sim = 0;
-
-
-
-
-
       }
 
       // Mass distribution: Heavier in the middle, tapering at both ends.
@@ -249,7 +222,7 @@ const Assignment2_base = defs.Assignment2_base =
           this.shapes.ball.draw( caller, this.uniforms, _debug_transform, this.materials.plastic);
   
           console.log("x: " + this._debug_xPos + "  z:  " + this._debug_zPos + "  length:  " + this._debug_length + "  height:  " + this._debug_height + "  mat:  " + this._debug_material + "  precision:  " + this._debug_precision);
-          console.log("room0.create_wall_z("+this._debug_xPos+","+ this._debug_zPos+"," +this._debug_length+","+ this._debug_height+", this.Wall); " );
+          // console.log("room0.create_wall_z("+this._debug_xPos+","+ this._debug_zPos+"," +this._debug_length+","+ this._debug_height+", this.Wall); " );
           
         }
 
@@ -257,10 +230,8 @@ const Assignment2_base = defs.Assignment2_base =
     }
 
 
-export class Assignment2 extends Assignment2_base
+export class DragonDemo extends DragonDemoBase
 {                                                    
-  // **Assignment2** is a Scene object that can be added to any display canvas.
-  // This particular scene is broken up into two pieces for easier understanding.
   // See the other piece, My_Demo_Base, if you need to see the setup code.
   // The piece here exposes only the display() method, which actually places and draws
   // the shapes.  We isolate that code so it can be experimented with on its own.
@@ -309,13 +280,11 @@ export class Assignment2 extends Assignment2_base
     let board_transform = Mat4.translation(3, 6, -1).times(Mat4.scale(2.5, 2.5, 0.1));
     this.shapes.box.draw( caller, this.uniforms, board_transform, { ...this.materials.plastic, color: blackboard_color } );
     
-    
-    let torso = Mat4.translation(0, 0, 0).times(Mat4.scale(1, 1, 1));
-    this.shapes.ball.draw( caller, this.uniforms, torso, { ...this.materials.plastic, color: blackboard_color } );
 
 
 
-    // let point = this.spline.computePoint(Math.abs(Math.sin(t/10)));
+
+    // this code is to attach an object to the front of the camera
     let base_transform_r = Mat4.identity().times(Mat4.scale(0.2,0.2,0.2).times(Mat4.translation(2.5,-1.5,-50)));
     this.shapes.cylinder.draw(caller, this.uniforms, this.uniforms.camera_transform.times(base_transform_r), { ...this.materials.metal, color: yellow });
     
@@ -326,9 +295,9 @@ export class Assignment2 extends Assignment2_base
     let y = final_transform[1][3];
     let z = final_transform[2][3];
     
-    // console.log("Cylinder Position:", x, y, z);
-    // this.ball_location = point;
-    let point;
+
+    // code for the delay startup
+    let point; 
     let delay = 1;
     if (t < delay) {
         point = [0, 10, 0]; // Stay still for the first 5 seconds
@@ -344,10 +313,10 @@ export class Assignment2 extends Assignment2_base
     
     this.curve.draw(caller, this.uniforms);
 
-    point = this.spline.computePoint((t / 50) % 1);
-
-    // this.particleSystem.setParticle(0, 1000, [x, y, z, 0, 0, 0]);
-    this.particleSystem.setParticle(0, 10, [point[0], point[1], point[2], 0, 0, 0]);
+    point = this.spline.computePoint((t / 50) % 1); // Use the circular spline
+    
+    // this.particleSystem.setParticle(0, 1000, [x, y, z, 0, 0, 0]); // uncomment to make dragon follow camera
+    this.particleSystem.setParticle(0, 10, [point[0], point[1], point[2], 0, 0, 0]); // Dragon follows spline
     this.particleSystem.draw(caller, this.uniforms, this.shapes, this.materials);
   }
 
@@ -355,12 +324,18 @@ export class Assignment2 extends Assignment2_base
   {                                 
     // render_controls(): Sets up a panel of interactive HTML elements, including
     // buttons with key bindings for affecting this scene, and live info readouts.
-    this.control_panel.innerHTML += "Assignment 2: IK Engine";
+    this.control_panel.innerHTML += "Dragon!!!!!!!!!";
     this.new_line();    
+
+
+
     // TODO: You can add your button events for debugging. (optional)
+    // This is my debug code for placing objects in the scene easier. 
+    // Could be updated to include splines and stuff
     this.key_triggered_button( "Debug", [ "Shift", "D" ], null );
     this.new_line();
 
+    this.control_panel.innerHTML += "Debug controls for placing objects during play - see console for position/rotation/scale data";
     this.key_triggered_button("Toggle Debug Box", ["Shift", "G"],
       () => this._debug = !this._debug);
   this.new_line();

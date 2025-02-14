@@ -28,8 +28,8 @@ import {Text_Demo}
 import {Transforms_Sandbox_Base, Transforms_Sandbox}
                     from "./examples/transforms-sandbox.js";
 
-import {Assignment2}
-                    from "./assignment2.js";
+import {DragonDemo}
+                    from "./DragonDemo.js";
 
 Object.assign (defs,
                {Minimal_Webgl_Demo},
@@ -42,12 +42,12 @@ Object.assign (defs,
                {Scene_To_Texture_Demo},
                {Text_Demo},
                {Transforms_Sandbox_Base, Transforms_Sandbox},
-               {Assignment2}
+               {DragonDemo}
 );
 
 // ******************** SELECT THE DEMO TO DISPLAY:
 
-const main_scene        = Assignment2;
+const main_scene        = DragonDemo;
 const additional_scenes = [];
 
 export {main_scene, additional_scenes, defs};
