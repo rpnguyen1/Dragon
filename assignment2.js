@@ -50,8 +50,6 @@ const Assignment2_base = defs.Assignment2_base =
           'ball' : new defs.Subdivision_Sphere( 4 ),
           'axis' : new defs.Axis_Arrows(),
           'cylinder' : new defs.Shape_From_File("assets/teapot.obj"),
-          'leon' : new defs.Shape_From_File("assets/Leon_head.obj"),
-          'leon_hair' : new defs.Shape_From_File("assets/Leon_head_hair.obj"),
         };
 
         // *** Materials: ***  A "material" used on individual shapes specifies all fields
@@ -116,12 +114,6 @@ const Assignment2_base = defs.Assignment2_base =
         this.curve = new Curve_Shape(this.curve_fn, this.sample_cnt);
         const point = this.spline.computePoint(0.5);
         console.log(point); // { x: 0.5, y: 0.5, z: 0.5 }
-
-        // this.ragdoll = new SpringMass();
-
-        // // Create 10 particles
-        // this.ragdoll.createParticle(10);
-        // this.particleSystem.setParticle(0, mass, [x, y, z, 0, 0, 0]);
 
 
 
@@ -244,12 +236,6 @@ const Assignment2_base = defs.Assignment2_base =
         this.uniforms.lights = [ defs.Phong_Shader.light_source( light_position, color( 1,1,1,1 ), 1000000 ) ];
 
         // draw axis arrows.
-        // this.shapes.leon_hair.draw(caller, this.uniforms, Mat4.identity().times(Mat4.translation(5,4,0)), this.materials.plastic);
-        // this.shapes.axis.draw(caller, this.uniforms, Mat4.identity(), this.materials.rgb);
-
-        // this.shapes.leon.draw(caller, this.uniforms, Mat4.identity().times(Mat4.translation(5,4,0)), this.materials.leonALBD);
-        // this.shapes.leon_hair.draw(caller, this.uniforms, Mat4.identity(), this.materials.plastic);
-
         // Debug
         if (this._debug){
           let _debug_transform = Mat4.translation(this._debug_xPos, this._debug_height/2, this._debug_zPos).times(Mat4.scale(this._debug_length/2, this._debug_height/2, 0.25));
