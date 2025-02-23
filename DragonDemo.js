@@ -8,25 +8,26 @@ import { Fabrik } from './fabrik.js'; // Forward And Backward Reaching Inverse K
 // const { vec3, vec4, color, Mat4, Shape, Material, Shader, Texture, Component } = tiny;
 const { vec3, vec4, color, Mat4, Shape, Shader, Texture, Component } = tiny;
 
-// TODO: you should implement the required classes here or in another file.
 const {Renderer, Entity, Camera, Light, Material} = defs
 
 export
 const DragonDemoBase = defs.DragonDemoBase =
     class DragonDemoBase extends Component
     {                                          
-      // **My_Demo_Base** is a Scene that can be added to any display canvas.
-      // This particular scene is broken up into two pieces for easier understanding.
-      // The piece here is the base class, which sets up the machinery to draw a simple
-      // scene demonstrating a few concepts.  A subclass of it, Assignment2,
-      // exposes only the display() method, which actually places and draws the shapes,
-      // isolating that code so it can be experimented with on its own.
       init()
       {
         console.log("init")
 
-        // constructor(): Scenes begin by populating initial values like the Shapes and Materials they'll need.
+        // constructor(): 
         this.hover = this.swarm = false;
+        
+        
+        //  ----- Set the Settings ----
+        this.settings.backgroundColor = [0.7, 0.7, 0.7, 1];
+        this.settings.FOV = 45;
+        
+        // Debug
+        this._debug_precision = 1;
 
 
         // At the beginning of our program, load one of each of these shape
@@ -38,35 +39,31 @@ const DragonDemoBase = defs.DragonDemoBase =
           'box'  : new defs.Cube(),
           'ball' : new defs.Subdivision_Sphere( 4 ),
           'axis' : new defs.Axis_Arrows(),
-          'cylinder' : new defs.Shape_From_File("assets/dragon_body.obj"), // these dragon models are temporary!!!!!
+          'cylinder' : new defs.Cylindrical_Tube(), // these dragon models are temporary!!!!!
+          'body' : new defs.Shape_From_File("assets/dragon_body.obj"), // these dragon models are temporary!!!!!
           'head' : new defs.Shape_From_File("assets/dragon.obj"),
           'teapot' : new defs.Shape_From_File("assets/teapot.obj"),
         };
 
-        // *** Materials: ***  A "material" used on individual shapes specifies all fields
-        // that a Shader queries to light/color it properly.  Here we use a Phong shader.
-        // We can now tweak the scalar coefficients from the Phong lighting formulas.
-        // Expected values can be found listed in Phong_Shader::update_GPU().
-        const basic = new defs.Basic_Shader();
-        const phong = new defs.Phong_Shader();
-        const tex_phong = new defs.Textured_Phong();
-        const fake_bump = new defs.Fake_Bump_Map();
-
-
-    
+        // *** Materials: ***  
+        // const basic = new defs.Basic_Shader();
+        // const phong = new defs.Phong_Shader();
+        // const tex_phong = new defs.Textured_Phong();
+        // const fake_bump = new defs.Fake_Bump_Map();
 
         this.materials = {};
-
-        this.materials.plastic = { shader: phong, ambient: .2, diffusivity: 1, specularity: .5, color: color( .9,.5,.9,1 ) }
-        this.materials.metal   = { shader: phong, ambient: .2, diffusivity: 1, specularity:  1, color: color( .9,.5,.9,1 ) }
-        this.materials.rgb = { shader: fake_bump, ambient: .5, texture: new Texture( "assets/rgb.jpg" ) }
-        this.materials.dragon = { shader: fake_bump, ambient: .5, texture: new Texture( "assets/EDragon_Body.png" ) }
-        this.materials.invisible = { shader: phong, ambient: .2, diffusivity: 1, specularity: .5, color: color( 0, 0, 0, 0 ) }
+        this.materials.plastic = { shader: new defs.Phong_Shader(), ambient: .2, diffusivity: 1, specularity: .5, color: color( .9,.5,.9,1 ) }
+        this.materials.metal   = { shader: new defs.Phong_Shader(), ambient: .2, diffusivity: 1, specularity:  1, colors: color( .9,.5,.9,1 ) }
+        this.materials.rgb = { shader: new defs.Fake_Bump_Map(), ambient: .1, texture: new Texture( "assets/rgb.jpg" ) }
+        this.materials.grass = { shader: new defs.Fake_Bump_Map(), ambient: .3, diffusivity: 10, specularity: 0.4, texture: new Texture( "assets/grass.jpg" ) }
+        this.materials.water = { shader: new defs.Fake_Bump_Map(), ambient: .5, diffusivity: 0.6, specularity: 2, texture: new Texture( "assets/water.png" ) }
+        this.materials.dragon = { shader: new defs.Fake_Bump_Map(), ambient: .5, texture: new Texture( "assets/EDragon_Body.png" ) }
+        this.materials.invisible = { shader: new defs.Phong_Shader(), ambient: .2, diffusivity: 1, specularity: .5, color: color( 0, 0, 0, 0 ) }
 
         this.ball_location = vec3(1, 1, 1);
         this.ball_radius = 0.25;
 
-        // TODO: you should create a Spline class instance
+        // Spline
         const controlPoints = [
           { x: -50, y: 10, z: 0 }, 
           { x: -50, y: 10, z: 50 }, 
@@ -90,11 +87,9 @@ const DragonDemoBase = defs.DragonDemoBase =
         this.sample_cnt = 1000;
         this.curve = new Curve_Shape(this.curve_fn, this.sample_cnt);
         const point = this.spline.computePoint(0.5);
-        console.log(point); // { x: 0.5, y: 0.5, z: 0.5 }
+        // console.log(point); // { x: 0.5, y: 0.5, z: 0.5 }
 
         /************************************* Particle Spring dragon implementation ****************************************/
-
-
 
         // Use a smaller spacing for a natural chain (e.g., 0.5 units)
         const numParticles = 20;
@@ -125,14 +120,15 @@ const DragonDemoBase = defs.DragonDemoBase =
           let { ks, kd } = this.computeSpringConstants(i, numParticles);
           if (i == 0) {
             this.particleSystem.link(i, i, i + 1, ks, kd, spacing, this.shapes.ball, this.materials.invisible, false);
-            // this.particleSystem.link(i, i, i + 1, ks, kd, spacing, this.shapes.cylinder, this.materials.dragon);
+            // this.particleSystem.link(i, i, i + 1, ks, kd, spacing, this.shapes.body, this.materials.dragon);
 
           } else if (i == 1){
-            this.particleSystem.link(i, i, i + 1, ks, kd, spacing, this.shapes.teapot, this.materials.rgb, false);
-            // this.particleSystem.link(i, i, i + 1, ks, kd, spacing, this.shapes.cylinder, this.materials.dragon);
+            // this.particleSystem.link(i, i, i + 1, ks, kd, spacing, this.shapes.teapot, this.materials.rgb, false);
+            this.particleSystem.link(i, i, i + 1, ks, kd, spacing, this.shapes.head, this.materials.dragon, false);
 
           } else{
-            this.particleSystem.link(i, i, i + 1, ks, kd, spacing, this.shapes.teapot, this.materials.rgb, true);
+            // this.particleSystem.link(i, i, i + 1, ks, kd, spacing, this.shapes.teapot, this.materials.rgb, true);
+            this.particleSystem.link(i, i, i + 1, ks, kd, spacing, this.shapes.body, this.materials.dragon, true);
 
           }
         }
@@ -197,9 +193,10 @@ const DragonDemoBase = defs.DragonDemoBase =
         // some initial setup.
 
         // Setup -- This part sets up the scene's overall camera matrix, projection matrix, and lights:
-        if( !caller.controls )
-        { this.animated_children.push( caller.controls = new defs.Movement_Controls( { uniforms: this.uniforms } ) );
-        // { this.animated_children.push( caller.controls = new defs.Movement_Controls_2( { uniforms: this.uniforms } ) );
+        if( !caller.controls ){ 
+          this.animated_children.push( caller.controls = new defs.Movement_Controls( { uniforms: this.uniforms } ) );
+          this.animated_children.push( caller.debug = new defs.Debug_Info( { uniforms: this.uniforms } ) );
+          // { this.animated_children.push( caller.controls = new defs.Movement_Controls_2( { uniforms: this.uniforms } ) );
           caller.controls.add_mouse_controls( caller.canvas );
 
           // Define the global camera and projection matrices, which are stored in shared_uniforms.  The camera
@@ -213,7 +210,7 @@ const DragonDemoBase = defs.DragonDemoBase =
           // TODO: you can change the camera as needed.
           Shader.assign_camera( Mat4.look_at (vec3 (5, 8, 15), vec3 (0, 5, 0), vec3 (0, 1, 0)), this.uniforms );
         }
-        this.uniforms.projection_transform = Mat4.perspective( Math.PI/4, caller.width/caller.height, 1, 100 );
+        this.uniforms.projection_transform = Mat4.perspective( this.settings.FOV * Math.PI/180, caller.width/caller.height, 1, 1000 );
 
         // *** Lights: *** Values of vector or point lights.  They'll be consulted by
         // the shader when coloring shapes.  See Light's class definition for inputs.
@@ -223,6 +220,8 @@ const DragonDemoBase = defs.DragonDemoBase =
         // !!! Light changed here
         const light_position = vec4(20, 20, 20, 1.0);
         this.uniforms.lights = [ defs.Phong_Shader.light_source( light_position, color( 1,1,1,1 ), 1000000 ) ];
+        // this.uniforms.lights.push(defs.Phong_Shader.light_source( vec4(20, 10, 30, 1.0), color( 1,1,1,1 ), 1000000 ) )
+        // this._debug_fps = caller.fps;
       }
     }
 
@@ -230,43 +229,22 @@ const DragonDemoBase = defs.DragonDemoBase =
 export class DragonDemo extends DragonDemoBase
 {                                                    
   // See the other piece, My_Demo_Base, if you need to see the setup code.
-  // The piece here exposes only the display() method, which actually places and draws
-  // the shapes.  We isolate that code so it can be experimented with on its own.
-  // This gives you a very small code sandbox for editing a simple scene, and for
-  // experimenting with matrix transformations.
   render_animation( caller )
-  {                                                // display():  Called once per frame of animation.  For each shape that you want to
-    // appear onscreen, place a .draw() call for it inside.  Each time, pass in a
-    // different matrix value to control where the shape appears.
-
-    // Variables that are in scope for you to use:
-    // this.shapes.box:   A vertex array object defining a 2x2x2 cube.
-    // this.shapes.ball:  A vertex array object defining a 2x2x2 spherical surface.
-    // this.materials.metal:    Selects a shader and draws with a shiny surface.
-    // this.materials.plastic:  Selects a shader and draws a more matte surface.
-    // this.lights:  A pre-made collection of Light objects.
-    // this.hover:  A boolean variable that changes when the user presses a button.
-    // shared_uniforms:  Information the shader needs for drawing.  Pass to draw().
-    // caller:  Wraps the WebGL rendering context shown onscreen.  Pass to draw().
-
+  {                                                // display():  Called once per frame of animation.
+    // console.log(caller);
     // Call the setup code that we left inside the base class:
     super.render_animation( caller );
-
-    /**********************************
-     Start coding down here!!!!
-     **********************************/
-    // From here on down it's just some example shapes drawn for you -- freely
-    // replace them with your own!  Notice the usage of the Mat4 functions
-    // translation(), scale(), and rotation() to generate matrices, and the
-    // function times(), which generates products of matrices.
 
     const blue = color( 0,0,1,1 ), yellow = color( 1,0.7,0,1 );
 
     const t = this.t = this.uniforms.animation_time/1000;
+    this.uniforms.projection_transform = Mat4.perspective( this.settings.FOV * Math.PI/180, caller.width/caller.height, 1, 1000 );
 
     // !!! Draw ground
     let floor_transform = Mat4.translation(0, 0, 0).times(Mat4.scale(100, 0.01, 100));
-    this.shapes.box.draw( caller, this.uniforms, floor_transform, { ...this.materials.plastic, color: yellow } );
+    this.shapes.box.draw( caller, this.uniforms, floor_transform, this.materials.water);
+    let box_transform = Mat4.translation(0, 1, 0).times(Mat4.scale(1, 1, 1));
+    this.shapes.box.draw( caller, this.uniforms, box_transform, { ...this.materials.plastic, color: blue } );
 
 
 
@@ -321,7 +299,47 @@ export class DragonDemo extends DragonDemoBase
     this.new_line();    
 
 
+    // ----- Debug Controls -----
+    this.new_line();
+    // this.live_html("<h3>Debug Panel</h3>");
+    // this.live_string(box => box.textContent = "FPS: " + this._debug_fps);
 
-    // TODO: You can add your button events for debugging. (optional)
+    // ----- Camera Controls -----
+    this.live_html("<b>Camera Controls</b>");
+    this.new_line();
+    this.live_string(box => box.textContent = "FOV: " + this.settings.FOV);
+    this.new_line();
+    this.key_triggered_button("Inc FOV", ["Shift", "M"],
+        () => this.settings.FOV += this._debug_precision);
+    this.key_triggered_button("Dec FOV", ["Shift", "N"],
+        () => this.settings.FOV -= this._debug_precision);
+    this.new_line();
+
+    // ----- Precision Settings -----
+    this.live_html("<b>Precision Settings</b>"); 
+    this.new_line();
+    this.live_string(box => box.textContent = "Precision: " + this._debug_precision); 
+    this.new_line();
+    this.key_triggered_button("Inc Precision", ["Shift", "J"],
+        () => this._debug_precision *= 2);
+    this.key_triggered_button("Dec Precision", ["Shift", "K"],
+        () => this._debug_precision /= 2);
+    this.new_line();
+
+    // ----- General Debug Options -----
+    this.live_html("<b>General Debug Options</b>"); 
+    this.new_line();
+    this.key_triggered_button("Reset Settings", ["Shift", "R"], 
+        () => this.reset_debug_settings());
+    this.new_line();
   }
+
+  // Example Reset Function
+  reset_debug_settings() {
+    this.settings.FOV = 45;  // Default value
+    this._debug_precision = 1;
+    console.log("Debug settings reset to default.");
+  }
+
+  // render_explanation(document_builder, document_element = document_builder.document_region) { }
 }

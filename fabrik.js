@@ -148,10 +148,10 @@ export class Fabrik {
       model_transform.pre_multiply(Mat4.rotation(theta, w[0], w[1], w[2]));
       model_transform.pre_multiply(Mat4.translation(center[0], center[1], center[2]));
       if (i == this.segments.length - 2 ){
-        shapes.ball.draw(caller, uniforms, model_transform, { ...materials.metal, color: blue });
+        shapes.head.draw(caller, uniforms, model_transform, { ...materials.metal, color: blue });
 
       } else{
-        shapes.ball.draw(caller, uniforms, model_transform, { ...materials.metal, color: blue });
+        shapes.body.draw(caller, uniforms, model_transform, { ...materials.metal, color: blue });
 
       }
     }

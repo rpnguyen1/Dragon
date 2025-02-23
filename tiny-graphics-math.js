@@ -281,6 +281,9 @@ const Matrix = math.Matrix =
           return floats;
       }
       to_string () { return "[" + this.map ((r, i) => "[" + r.join (", ") + "]").join (" ") + "]"; }
+      static extractPositionFromMatrix(matrix) { // custom function. might need a better name
+        return Vector3.create(matrix[0][3], matrix[1][3], matrix[2][3]);
+      }
   };
 
 

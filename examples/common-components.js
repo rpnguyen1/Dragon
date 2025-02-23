@@ -338,23 +338,23 @@ const Movement_Controls = defs.Movement_Controls =
           }, "orange");
           this.new_line();
 
-          this.key_triggered_button("Look at origin from front", ["1"], () => {
-              this.inverse().set(Mat4.look_at(vec3(0, 0, 10), vec3(0, 0, 0), vec3(0, 1, 0)));
-              this.matrix().set(Mat4.inverse(this.inverse()));
-          }, "black");
-          this.new_line();
-          this.key_triggered_button("from right", ["2"], () => {
-              this.inverse().set(Mat4.look_at(vec3(10, 0, 0), vec3(0, 0, 0), vec3(0, 1, 0)));
-              this.matrix().set(Mat4.inverse(this.inverse()));
-          }, "black");
-          this.key_triggered_button("from rear", ["3"], () => {
-              this.inverse().set(Mat4.look_at(vec3(0, 0, -10), vec3(0, 0, 0), vec3(0, 1, 0)));
-              this.matrix().set(Mat4.inverse(this.inverse()));
-          }, "black");
-          this.key_triggered_button("from left", ["4"], () => {
-              this.inverse().set(Mat4.look_at(vec3(-10, 0, 0), vec3(0, 0, 0), vec3(0, 1, 0)));
-              this.matrix().set(Mat4.inverse(this.inverse()));
-          }, "black");
+        //   this.key_triggered_button("Look at origin from front", ["1"], () => {
+        //       this.inverse().set(Mat4.look_at(vec3(0, 0, 10), vec3(0, 0, 0), vec3(0, 1, 0)));
+        //       this.matrix().set(Mat4.inverse(this.inverse()));
+        //   }, "black");
+        //   this.new_line();
+        //   this.key_triggered_button("from right", ["2"], () => {
+        //       this.inverse().set(Mat4.look_at(vec3(10, 0, 0), vec3(0, 0, 0), vec3(0, 1, 0)));
+        //       this.matrix().set(Mat4.inverse(this.inverse()));
+        //   }, "black");
+        //   this.key_triggered_button("from rear", ["3"], () => {
+        //       this.inverse().set(Mat4.look_at(vec3(0, 0, -10), vec3(0, 0, 0), vec3(0, 1, 0)));
+        //       this.matrix().set(Mat4.inverse(this.inverse()));
+        //   }, "black");
+        //   this.key_triggered_button("from left", ["4"], () => {
+        //       this.inverse().set(Mat4.look_at(vec3(-10, 0, 0), vec3(0, 0, 0), vec3(0, 1, 0)));
+        //       this.matrix().set(Mat4.inverse(this.inverse()));
+        //   }, "black");
           this.new_line();
           this.key_triggered_button("Attach to global camera", ["Shift", "R"],
                                      () => { this.will_take_over_uniforms = true; }, "blue");
@@ -433,3 +433,20 @@ const Movement_Controls = defs.Movement_Controls =
           this.z_axis = this.inverse().times(vec4(0, 0, 1, 0));
       }
   };
+
+
+
+  
+const Debug_Info = defs.Debug_Info =
+class Debug_Info extends Component {
+    _debug_fps = 0;
+    render_controls() {
+        // this.control_panel.innerHTML += "Stats<br>";
+        // this.live_html("<h3>Debug Panel</h3>");
+        this.live_string(box => box.textContent = "FPS: " + this._debug_fps);
+    }
+
+    render_animation(context) {
+        this._debug_fps = context.fps;
+    }
+};

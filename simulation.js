@@ -209,7 +209,7 @@ export class SpringMass {
   // create springs <Number of Springs>
   createSprings(num){
     for (let i = 0; i < num; i++) {
-      console.log("creating spring", i)
+      // console.log("creating spring", i)
       this.springs.push(
         // pid1: -1,
         // pid2: -1,
