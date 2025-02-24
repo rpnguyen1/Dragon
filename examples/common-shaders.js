@@ -949,3 +949,228 @@ const Fake_Bump_Map = defs.Fake_Bump_Map =
           } `;
       }
   };
+
+
+
+  const Phong_Shader2 = defs.Phong_Shader2 = // with texture maps
+  class Phong_Shader2 extends Shader {
+    constructor (num_lights = 2) {
+      super ();
+      this.num_lights = num_lights;
+  }
+  shared_glsl_code () {          // ********* SHARED CODE, INCLUDED IN BOTH SHADERS *********
+      return ` 
+    precision mediump float;
+    const int N_LIGHTS = ` + this.num_lights + `;
+    uniform float ambient, diffusivity, specularity, smoothness;
+    uniform vec4 light_positions_or_vectors[N_LIGHTS], light_colors[N_LIGHTS];
+    uniform float light_attenuation_factors[N_LIGHTS];
+    uniform vec4 shape_color;
+    uniform vec3 squared_scale, camera_center;
+
+    varying vec3 N, vertex_worldspace;
+                                         // ***** PHONG SHADING HAPPENS HERE: *****
+    vec3 phong_model_lights( vec3 N, vec3 vertex_worldspace ) {
+        vec3 E = normalize( camera_center - vertex_worldspace );
+        vec3 result = vec3( 0.0 );
+        for(int i = 0; i < N_LIGHTS; i++) {
+            vec3 surface_to_light_vector = light_positions_or_vectors[i].xyz -
+                                           light_positions_or_vectors[i].w * vertex_worldspace;
+            float distance_to_light = length( surface_to_light_vector );
+
+            vec3 L = normalize( surface_to_light_vector );
+            vec3 H = normalize( L + E );
+            
+              // Compute diffuse and specular components of Phong Reflection Model.
+            // float diffuse  =      max( dot( N, L ), 0.0 );
+            float diffuse = max(dot(N, L), 0.0) * 1.0;
+            // Fresnel-Schlick approximation for specular
+            float fresnel_factor = 0.2; // Adjust this value to control the strength of the Fresnel effect
+            float fresnel = fresnel_factor * pow(1.0 - max(dot(E, N), 0.0), 3.0);
+
+            
+            float specular = (1.0 - fresnel) * pow(max(dot(N, H), 0.0), smoothness) + fresnel;
+            // float specular = pow( max( dot( N, H ), 0.0 ), smoothness );     // Use Blinn's "halfway vector" method.
+            
+            float attenuation = 1.0 / (1.0 + light_attenuation_factors[i] * distance_to_light * distance_to_light );
+
+            vec3 light_contribution = shape_color.xyz * light_colors[i].xyz * diffusivity * diffuse
+                                                      + light_colors[i].xyz * specularity * specular;
+
+            result += attenuation * light_contribution;
+          }
+        return result;
+      } `;
+  }
+  vertex_glsl_code () {         // ********* VERTEX SHADER *********
+    return this.shared_glsl_code () + `
+  varying vec2 f_tex_coord;
+  attribute vec3 position, normal;                            // Position is expressed in object coordinates.
+  attribute vec2 texture_coord;
+
+  uniform mat4 model_transform;
+  uniform mat4 projection_camera_model_transform;
+
+  void main() {
+      gl_Position = projection_camera_model_transform * vec4( position, 1.0 );     // Move vertex to final space.
+                                        // The final normal vector in screen space.
+      N = normalize( mat3( model_transform ) * normal / squared_scale);
+
+      vertex_worldspace = ( model_transform * vec4( position, 1.0 ) ).xyz;
+                                        // Turn the per-vertex texture coordinate into an interpolated variable.
+      f_tex_coord = texture_coord;
+    } `;
+}
+fragment_glsl_code () {        // ********* FRAGMENT SHADER *********
+  return this.shared_glsl_code () + `
+varying vec2 f_tex_coord;
+uniform sampler2D texture;
+
+void main() {
+    vec4 tex_color = texture2D( texture, f_tex_coord );       // Sample texture image in the correct place.
+    if( tex_color.w < .01 ) discard;
+                                                             // Compute an initial (ambient) color:
+    gl_FragColor = vec4( ( tex_color.xyz + shape_color.xyz ) * ambient, shape_color.w * tex_color.w );
+                                                             // Compute the final color with contributions from lights:
+    gl_FragColor.xyz += phong_model_lights( normalize( N ), vertex_worldspace );
+  } `;
+}
+  static light_source (position, color, size) {
+      return {position, color, attenuation: 1 / size};
+  }
+  send_material (gl, gpu, material) {
+      gl.uniform4fv (gpu.shape_color, material.color);
+      gl.uniform1f (gpu.ambient, material.ambient);
+      gl.uniform1f (gpu.diffusivity, material.diffusivity);
+      gl.uniform1f (gpu.specularity, material.specularity);
+      gl.uniform1f (gpu.smoothness, material.smoothness);
+  }
+  send_uniforms (gl, gpu, uniforms, model_transform) {
+      const O = vec4 (0, 0, 0, 1), camera_center = uniforms.camera_transform.times (O).to3 ();
+      gl.uniform3fv (gpu.camera_center, camera_center);
+
+      // Use the squared scale trick from "Eric's blog" instead of inverse transpose matrix:
+      const squared_scale = model_transform.reduce (
+        (acc, r) => { return acc.plus (vec4 (...r).times_pairwise (r)); }, vec4 (0, 0, 0, 0)).to3 ();
+      gl.uniform3fv (gpu.squared_scale, squared_scale);
+
+      // Send the current matrices to the shader as a single pre-computed final matrix, the product.
+      const PCM = uniforms.projection_transform.times (uniforms.camera_inverse).times (model_transform);
+      gl.uniformMatrix4fv (gpu.model_transform, false, Matrix.flatten_2D_to_1D (model_transform.transposed ()));
+      gl.uniformMatrix4fv (gpu.projection_camera_model_transform, false,
+                           Matrix.flatten_2D_to_1D (PCM.transposed ()));
+
+      if ( !uniforms.lights || !uniforms.lights.length)
+          return;         // Lights omitted, ambient only
+
+      const light_positions_flattened = [], light_colors_flattened = [];
+      for (var i = 0; i < 4 * uniforms.lights.length; i++) {
+          light_positions_flattened.push (uniforms.lights[ Math.floor (i / 4) ].position[ i % 4 ]);
+          light_colors_flattened.push (uniforms.lights[ Math.floor (i / 4) ].color[ i % 4 ]);
+      }
+      gl.uniform4fv (gpu.light_positions_or_vectors, light_positions_flattened);
+      gl.uniform4fv (gpu.light_colors, light_colors_flattened);
+      gl.uniform1fv (gpu.light_attenuation_factors, uniforms.lights.map (l => l.attenuation));
+  }
+  update_GPU (context, gpu_addresses, uniforms, model_transform, material) {
+      const defaults    = {color: color (0, 0, 0, 1), ambient: 0, diffusivity: 1, specularity: 1, smoothness: 40};
+      let full_material = Object.assign (defaults, material);
+
+      this.send_material (context, gpu_addresses, full_material);
+      this.send_uniforms (context, gpu_addresses, uniforms, model_transform);
+
+      if (material.texture && material.texture.ready) {
+        // Select texture unit 0 for the fragment shader Sampler2D uniform called "texture":
+        context.uniform1i (gpu_addresses.texture, 0);
+        // For this draw, use the texture image from correct the GPU buffer:
+        material.texture.activate (context, 0);
+    }
+  }
+};
+
+
+const Fog_Shader = defs.Fog_Shader =
+  class Fog_Shader extends Phong_Shader2 {
+    fragment_glsl_code () {                            // ********* FRAGMENT SHADER *********
+      return this.shared_glsl_code () + `
+    varying vec2 f_tex_coord;
+    uniform sampler2D texture;
+    // uniform float animation_time;
+
+    void main()  {        
+        vec2 f_tex_2 = f_tex_coord;
+        vec2 f_tex_3 = vec2(f_tex_2.s, f_tex_2.t);
+
+
+        // vec4 tex_color = texture2D( texture, f_tex_coord );       // Sample texture image in the correct place.
+        vec4 tex_color = texture2D( texture, f_tex_3 );       // Sample texture image in the correct place.
+        if( tex_color.w < .01 ) discard;
+                        
+        // This time, slightly disturb normals based on sampling the same image that was used for texturing.
+        vec3 bumped_N  = N + tex_color.rgb - .5*vec3(1,1,1);
+        gl_FragColor = vec4( ( tex_color.xyz + shape_color.xyz ) * ambient, shape_color.w * tex_color.w );
+        gl_FragColor.xyz += phong_model_lights( normalize( bumped_N ), vertex_worldspace );
+      
+      
+          //Blue for depth distance
+          #define LOG2 1.442695
+          float fogDensity = 0.009;
+          float fogDistance = length(camera_center - vertex_worldspace);
+          float fogAmount = 1. - exp2(-fogDensity * fogDensity * fogDistance * fogDistance * LOG2);
+          fogAmount = clamp(fogAmount, 0., 1.);
+          vec4 fog_color = vec4 (0.0, 0.41, 0.58, 1.0);
+          // vec4 fog_color = vec4 (0.7, 0.7, 0.7, 1.0);
+          gl_FragColor = mix(gl_FragColor, fog_color, fogAmount);
+        } `;
+  }
+  update_GPU(context, gpu_addresses, uniforms, model_transform, material) {
+    // update_GPU(): Add a little more to the base class's version of this method.
+    super.update_GPU(context, gpu_addresses, uniforms, model_transform, material);
+    // Updated for assignment 4
+    // context.uniform1f(gpu_addresses.animation_time, uniforms.animation_time / 1000);
+  }
+}
+
+
+const Scroll_Fog_Shader = defs.Scroll_Fog_Shader =
+  class Scroll_Fog_Shader extends Phong_Shader2 {
+    fragment_glsl_code () {                            // ********* FRAGMENT SHADER *********
+      return this.shared_glsl_code () + `
+    varying vec2 f_tex_coord;
+    uniform sampler2D texture;
+    uniform float animation_time;
+
+    void main()  {        
+        vec2 f_tex_2 = f_tex_coord;
+        vec2 f_tex_3 = vec2(f_tex_2.s, f_tex_2.t - 0.02 * animation_time);
+
+
+        // vec4 tex_color = texture2D( texture, f_tex_coord );       // Sample texture image in the correct place.
+        vec4 tex_color = texture2D( texture, f_tex_3 );       // Sample texture image in the correct place.
+        if( tex_color.w < .01 ) discard;
+                        
+        // This time, slightly disturb normals based on sampling the same image that was used for texturing.
+        vec3 bumped_N  = N + tex_color.rgb - .5*vec3(1,1,1);
+        gl_FragColor = vec4( ( tex_color.xyz + shape_color.xyz ) * ambient, shape_color.w * tex_color.w );
+        gl_FragColor.xyz += phong_model_lights( normalize( bumped_N ), vertex_worldspace );
+      
+      
+          //Blue for depth distance
+          #define LOG2 1.442695
+          float fogDensity = 0.009;
+          float fogDistance = length(camera_center - vertex_worldspace);
+          float fogAmount = 1. - exp2(-fogDensity * fogDensity * fogDistance * fogDistance * LOG2);
+          fogAmount = clamp(fogAmount, 0., 1.);
+          vec4 fog_color = vec4 (0.0, 0.41, 0.58, 1.0);
+          // vec4 fog_color = vec4 (0.7, 0.7, 0.7, 1.0);
+          gl_FragColor = mix(gl_FragColor, fog_color, fogAmount);
+        } `;
+  }
+  update_GPU(context, gpu_addresses, uniforms, model_transform, material) {
+    // update_GPU(): Add a little more to the base class's version of this method.
+    super.update_GPU(context, gpu_addresses, uniforms, model_transform, material);
+    // Updated for assignment 4
+    context.uniform1f(gpu_addresses.animation_time, uniforms.animation_time / 1000);
+  }
+}
+

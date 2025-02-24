@@ -28,6 +28,7 @@ const DragonDemoBase = defs.DragonDemoBase =
         
         //  ----- Set the Settings ----
         this.settings.backgroundColor = [0.7, 0.7, 0.7, 1];
+        this.settings.LightColor = [0.95, 0.7, 0.45, 1];
         this.settings.FOV = 45;
         
         // Debug
@@ -38,6 +39,7 @@ const DragonDemoBase = defs.DragonDemoBase =
         // definitions onto the GPU.
         this.shapes = {
           'box'  : new defs.Cube(),
+          'square'  : new defs.Square(),
           'ball' : new defs.Subdivision_Sphere( 4 ),
           'axis' : new defs.Axis_Arrows(),
           'cylinder' : new defs.Cylindrical_Tube(), // these dragon models are temporary!!!!!
@@ -51,12 +53,12 @@ const DragonDemoBase = defs.DragonDemoBase =
         this.materials = {
           // Colors
           plastic : { shader: new defs.Phong_Shader(), ambient: .2, diffusivity: 1, specularity: .5, color: color( .9,.5,.9,1 ) },
-          metal   : { shader: new defs.Phong_Shader(), ambient: .2, diffusivity: 1, specularity:  1, colors: color( .9,.5,.9,1 ) },
+          metal   : { shader: new defs.Phong_Shader2(), ambient: .2, diffusivity: 1, specularity:  1, colors: color( .9,.5,.9,1 ) },
           // Textures
           rgb : { shader: new defs.Fake_Bump_Map(), ambient: .1, texture: new Texture( "assets/rgb.jpg" ) },
-          grass : { shader: new defs.Fake_Bump_Map(), ambient: .3, diffusivity: 10, specularity: 0.4, texture: new Texture( "assets/grass.jpg" ) },
-          water : { shader: new defs.Fake_Bump_Map(), ambient: .5, diffusivity: 0.6, specularity: 2, texture: new Texture( "assets/water.png" ) },
-          dragon : { shader: new defs.Fake_Bump_Map(), ambient: .5, texture: new Texture( "assets/EDragon_Body.png" ) },
+          grass : { shader: new defs.Fog_Shader(), ambient: .3, diffusivity: 10, specularity: 0.4, texture: new Texture( "assets/grass.jpg" ) },
+          water : { shader: new defs.Scroll_Fog_Shader(), ambient: .5, diffusivity: 0.6, specularity: 2, texture: new Texture( "assets/water.png" ) },
+          dragon : { shader: new defs.Fog_Shader(), ambient: .5, texture: new Texture( "assets/EDragon_Body.png" ) },
           // Debug/shows silhouette but not model 
           invisible : { shader: new defs.Phong_Shader(), ambient: .2, diffusivity: 1, specularity: .5, color: color( 0, 0, 0, 0 ) },
 
@@ -171,8 +173,12 @@ const DragonDemoBase = defs.DragonDemoBase =
         // const light_position = Mat4.rotation( angle,   1,0,0 ).times( vec4( 0,-1,1,0 ) ); !!!
         // !!! Light changed here
         const light_position = vec4(20, 20, 20, 1.0);
-        this.uniforms.lights = [ defs.Phong_Shader.light_source( light_position, color( 1,1,1,1 ), 1000000 ) ];
-        // this.uniforms.lights.push(defs.Phong_Shader.light_source( vec4(20, 10, 30, 1.0), color( 1,1,1,1 ), 1000000 ) )
+        const light_color = color(this.settings.LightColor[0], this.settings.LightColor[1], this.settings.LightColor[2], this.settings.LightColor[3])
+        this.uniforms.lights = [ defs.Phong_Shader.light_source( light_position, light_color, 1000000 ) ];
+        this.shapes.ball.draw( caller, this.uniforms, Mat4.translation(20, 20, 20), this.materials.water);
+        this.uniforms.lights.push(defs.Phong_Shader.light_source( vec4(20, 10, 30, 1.0), color( 0.1,1,1,1 ), 1000 ) )
+        this.shapes.ball.draw( caller, this.uniforms, Mat4.translation(20, 10, 30), this.materials.water);
+
         // this._debug_fps = caller.fps;
       }
     }
@@ -198,6 +204,7 @@ export class DragonDemo extends DragonDemoBase
     // Cube
     this.shapes.box.draw( caller, this.uniforms, Mat4.translation(0, 1, 0).times(Mat4.scale(1, 1, 1)), { ...this.materials.plastic, color: blue } );
     this.shapes.traffic.draw( caller, this.uniforms, Mat4.translation(4, 1, 0).times(Mat4.scale(1, 1, 1)), { ...this.materials.plastic, color: blue } );
+    // this.shapes.square.draw( caller, this.uniforms, Mat4.translation(6, 1, 0).times(Mat4.scale(1, 1, 1)), this.materials.basic);
 
 
 
@@ -270,6 +277,29 @@ export class DragonDemo extends DragonDemoBase
         () => this.settings.FOV -= this._debug_precision);
     this.new_line();
 
+    // this.live_string(box => box.textContent = "light color: " + this.settings.LightColor);
+    // this.new_line();
+    // this.key_triggered_button("Inc FOV", ["Shift", "U"],
+    //     () => this.settings.LightColor[0] += this._debug_precision);
+    // this.key_triggered_button("Dec FOV", ["Shift", "I"],
+    //     () => this.settings.LightColor[0] -= this._debug_precision);
+    // this.new_line();
+    // this.key_triggered_button("Inc FOV", ["Shift", "U"],
+    //     () => this.settings.LightColor[1] += this._debug_precision);
+    // this.key_triggered_button("Dec FOV", ["Shift", "I"],
+    //     () => this.settings.LightColor[1] -= this._debug_precision);
+    // this.new_line();
+    // this.key_triggered_button("Inc FOV", ["Shift", "U"],
+    //     () => this.settings.LightColor[2] += this._debug_precision);
+    // this.key_triggered_button("Dec FOV", ["Shift", "I"],
+    //     () => this.settings.LightColor[2] -= this._debug_precision);
+    // this.new_line();
+    // this.key_triggered_button("Inc FOV", ["Shift", "U"],
+    //     () => this.settings.LightColor[3] += this._debug_precision);
+    // this.key_triggered_button("Dec FOV", ["Shift", "I"],
+    //     () => this.settings.LightColor[3] -= this._debug_precision);
+    // this.new_line();
+
     // ----- Precision Settings -----
     this.live_html("<b>Precision Settings</b>"); 
     this.new_line();
@@ -296,5 +326,10 @@ export class DragonDemo extends DragonDemoBase
     console.log("Debug settings reset to default.");
   }
 
-  // render_explanation(document_builder, document_element = document_builder.document_region) { }
+  render_explanation() { 
+    this.document_region.innerHTML += `
+        <p><strong>Dragon</strong></p>
+        <p>Patricsk Dai | Richard Nguyen | Delia Ivascu</p>
+    `;
+  }
 }
