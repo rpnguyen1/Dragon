@@ -11,6 +11,8 @@ export class EndEffector {
     // Copy the provided position into a new vec3.
     this.position = vec3(position[0], position[1], position[2]);
     this.length = length;
+    // this.model = model;
+    // this.material = material;  maybe make it so it can be custom shapes?
   }
 }
 

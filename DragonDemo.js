@@ -1,7 +1,11 @@
+// Dragon Demo - This is the main file for the dragon animation. This could also be just a base to test various systems(particles, simulation)
+// and have the real animation be in a different file for the final.
+
 import {tiny, defs} from './examples/common.js';
 import {Hermit_spline, Curve_Shape }from './hermit.js';
 import {SpringMass }from './simulation.js';
 import { Fabrik } from './fabrik.js'; // Forward And Backward Reaching Inverse Kinematics just for testing 
+import { SpringMassDragon, FabrikDragon } from './Dragon.js'; // Import dragon types???
 
 
 // Pull these names into this module's scope for convenience:
@@ -30,11 +34,8 @@ const DragonDemoBase = defs.DragonDemoBase =
         this._debug_precision = 1;
 
 
-        // At the beginning of our program, load one of each of these shape
-        // definitions onto the GPU.  NOTE:  Only do this ONCE per shape it
-        // would be redundant to tell it again.  You should just re-use the
-        // one called "box" more than once in display() to draw multiple cubes.
-        // Don't define more than one blueprint for the same thing here.
+        // *** Shapes: ***At the beginning of our program, load one of each of these shape
+        // definitions onto the GPU.
         this.shapes = {
           'box'  : new defs.Cube(),
           'ball' : new defs.Subdivision_Sphere( 4 ),
@@ -43,22 +44,23 @@ const DragonDemoBase = defs.DragonDemoBase =
           'body' : new defs.Shape_From_File("assets/dragon_body.obj"), // these dragon models are temporary!!!!!
           'head' : new defs.Shape_From_File("assets/dragon.obj"),
           'teapot' : new defs.Shape_From_File("assets/teapot.obj"),
+          'traffic' : new defs.Shape_From_File("assets/traffic_box.obj"),
         };
 
-        // *** Materials: ***  
-        // const basic = new defs.Basic_Shader();
-        // const phong = new defs.Phong_Shader();
-        // const tex_phong = new defs.Textured_Phong();
-        // const fake_bump = new defs.Fake_Bump_Map();
+        // *** Materials: ***  Basic_Shader() Phong_Shader() Textured_Phong() Fake_Bump_Map()
+        this.materials = {
+          // Colors
+          plastic : { shader: new defs.Phong_Shader(), ambient: .2, diffusivity: 1, specularity: .5, color: color( .9,.5,.9,1 ) },
+          metal   : { shader: new defs.Phong_Shader(), ambient: .2, diffusivity: 1, specularity:  1, colors: color( .9,.5,.9,1 ) },
+          // Textures
+          rgb : { shader: new defs.Fake_Bump_Map(), ambient: .1, texture: new Texture( "assets/rgb.jpg" ) },
+          grass : { shader: new defs.Fake_Bump_Map(), ambient: .3, diffusivity: 10, specularity: 0.4, texture: new Texture( "assets/grass.jpg" ) },
+          water : { shader: new defs.Fake_Bump_Map(), ambient: .5, diffusivity: 0.6, specularity: 2, texture: new Texture( "assets/water.png" ) },
+          dragon : { shader: new defs.Fake_Bump_Map(), ambient: .5, texture: new Texture( "assets/EDragon_Body.png" ) },
+          // Debug/shows silhouette but not model 
+          invisible : { shader: new defs.Phong_Shader(), ambient: .2, diffusivity: 1, specularity: .5, color: color( 0, 0, 0, 0 ) },
 
-        this.materials = {};
-        this.materials.plastic = { shader: new defs.Phong_Shader(), ambient: .2, diffusivity: 1, specularity: .5, color: color( .9,.5,.9,1 ) }
-        this.materials.metal   = { shader: new defs.Phong_Shader(), ambient: .2, diffusivity: 1, specularity:  1, colors: color( .9,.5,.9,1 ) }
-        this.materials.rgb = { shader: new defs.Fake_Bump_Map(), ambient: .1, texture: new Texture( "assets/rgb.jpg" ) }
-        this.materials.grass = { shader: new defs.Fake_Bump_Map(), ambient: .3, diffusivity: 10, specularity: 0.4, texture: new Texture( "assets/grass.jpg" ) }
-        this.materials.water = { shader: new defs.Fake_Bump_Map(), ambient: .5, diffusivity: 0.6, specularity: 2, texture: new Texture( "assets/water.png" ) }
-        this.materials.dragon = { shader: new defs.Fake_Bump_Map(), ambient: .5, texture: new Texture( "assets/EDragon_Body.png" ) }
-        this.materials.invisible = { shader: new defs.Phong_Shader(), ambient: .2, diffusivity: 1, specularity: .5, color: color( 0, 0, 0, 0 ) }
+        };
 
         this.ball_location = vec3(1, 1, 1);
         this.ball_radius = 0.25;
@@ -90,100 +92,50 @@ const DragonDemoBase = defs.DragonDemoBase =
         // console.log(point); // { x: 0.5, y: 0.5, z: 0.5 }
 
         /************************************* Particle Spring dragon implementation ****************************************/
-
-        // Use a smaller spacing for a natural chain (e.g., 0.5 units)
-        const numParticles = 20;
-        const spacing = 0.05;         // Smaller spacing for a thick body
-        const startY = 10;
-        const startX = 0;
-
-        // Set up the particle system
-        this.particleSystem = new SpringMass();
-        this.particleSystem.createParticle(numParticles);
-
-        // Set particles in a curved formation: let's create a gentle arc
-        for (let i = 0; i < numParticles; i++) {
-          let mass = this.computeMass(i, numParticles);
-          // Create a gentle curve: for example, an arc defined by a quadratic function.
-          // You can tweak the curvature by adjusting the coefficient.
-          let curvature = 0.2;
-          let x = startX + i * spacing;
-          let y = startY + curvature * (i - (numParticles - 1)/2) ** 2;
-          let z = 0;  // or add a sinusoidal lateral component if desired
-
-          this.particleSystem.setParticle(i, mass, [x, y, z, 0, 0, 0]);
-        }
-
-        // Create springs linking consecutive particles.
-        this.particleSystem.createSprings(numParticles - 1);
-        for (let i = 0; i < numParticles - 1; i++) {
-          let { ks, kd } = this.computeSpringConstants(i, numParticles);
-          if (i == 0) {
-            this.particleSystem.link(i, i, i + 1, ks, kd, spacing, this.shapes.ball, this.materials.invisible, false);
-            // this.particleSystem.link(i, i, i + 1, ks, kd, spacing, this.shapes.body, this.materials.dragon);
-
-          } else if (i == 1){
-            // this.particleSystem.link(i, i, i + 1, ks, kd, spacing, this.shapes.teapot, this.materials.rgb, false);
-            this.particleSystem.link(i, i, i + 1, ks, kd, spacing, this.shapes.head, this.materials.dragon, false);
-
-          } else{
-            // this.particleSystem.link(i, i, i + 1, ks, kd, spacing, this.shapes.teapot, this.materials.rgb, true);
-            this.particleSystem.link(i, i, i + 1, ks, kd, spacing, this.shapes.body, this.materials.dragon, true);
-
-          }
-        }
-
-        this.particleSystem.setGround(50000, 500000)
-        this.particleSystem.setGravity(0)
-        this.particleSystem.setDragCoefficient(0.99);
-        this.particleSystem.setIntegrationMethod("verlet", 0.001);
-
-        this.particleSystem.isRunning = true;
-        this.particleSystem.t_sim = 0;
-
+        this.dragon1 = new SpringMassDragon(this.shapes, this.materials);
 
         /************************************* Fabrik dragon implementation ****************************************/
         // Suppose you want a chain starting at (0, 10, 0) with 10 segments:
-        this.dragonTail = new Fabrik(vec3(0, 10, 0), 20, 3);
+        this.dragon2 = new FabrikDragon(this.shapes, this.materials);
       }
 
-      // Mass distribution: Heavier in the middle, tapering at both ends.
-      computeMass(i, numParticles) {
-        // Using a quadratic curve centered on the middle of the chain.
-        let mid = (numParticles - 1) / 2;
-        let distance = Math.abs(i - mid);
-        // Maximum mass at the center, lower at the ends.
-        const maxMass = 100;
-        const minMass = 7000;
-        // Interpolate: when distance = 0 -> maxMass, when distance = mid -> minMass.
-        return maxMass - (maxMass - minMass) * (distance / mid);
-      }
+      // // Mass distribution: Heavier in the middle, tapering at both ends.
+      // computeMass(i, numParticles) {
+      //   // Using a quadratic curve centered on the middle of the chain.
+      //   let mid = (numParticles - 1) / 2;
+      //   let distance = Math.abs(i - mid);
+      //   // Maximum mass at the center, lower at the ends.
+      //   const maxMass = 100;
+      //   const minMass = 7000;
+      //   // Interpolate: when distance = 0 -> maxMass, when distance = mid -> minMass.
+      //   return maxMass - (maxMass - minMass) * (distance / mid);
+      // }
 
-      // Spring properties: Stiffer in the middle, softer at the tail.
-      computeSpringConstants(i, numParticles) {
-        // We'll vary based on the link index (0 to numParticles-2)
-        const ksStart = 1000; // near head
-        const ksMid = 900;   // stiffer midsection (for a solid body)
-        const ksEnd = 500;   // softer tail
-        const kdStart = 1000;
-        const kdMid = 1000;
-        const kdEnd = 500;
+      // // Spring properties: Stiffer in the middle, softer at the tail.
+      // computeSpringConstants(i, numParticles) {
+      //   // We'll vary based on the link index (0 to numParticles-2)
+      //   const ksStart = 1000; // near head
+      //   const ksMid = 900;   // stiffer midsection (for a solid body)
+      //   const ksEnd = 500;   // softer tail
+      //   const kdStart = 1000;
+      //   const kdMid = 1000;
+      //   const kdEnd = 500;
         
-        let t;
-        let ks, kd;
-        if(i < numParticles / 2) {
-          // Interpolate from head to midsection:
-          t = i / (numParticles / 2);
-          ks = ksStart * (1 - t) + ksMid * t;
-          kd = kdStart * (1 - t) + kdMid * t;
-        } else {
-          // Interpolate from midsection to tail:
-          t = (i - numParticles / 2) / (numParticles / 2);
-          ks = ksMid * (1 - t) + ksEnd * t;
-          kd = kdMid * (1 - t) + kdEnd * t;
-        }
-        return { ks, kd };
-      }
+      //   let t;
+      //   let ks, kd;
+      //   if(i < numParticles / 2) {
+      //     // Interpolate from head to midsection:
+      //     t = i / (numParticles / 2);
+      //     ks = ksStart * (1 - t) + ksMid * t;
+      //     kd = kdStart * (1 - t) + kdMid * t;
+      //   } else {
+      //     // Interpolate from midsection to tail:
+      //     t = (i - numParticles / 2) / (numParticles / 2);
+      //     ks = ksMid * (1 - t) + ksEnd * t;
+      //     kd = kdMid * (1 - t) + kdEnd * t;
+      //   }
+      //   return { ks, kd };
+      // }
 
 
       render_animation( caller )
@@ -243,8 +195,9 @@ export class DragonDemo extends DragonDemoBase
     // !!! Draw ground
     let floor_transform = Mat4.translation(0, 0, 0).times(Mat4.scale(100, 0.01, 100));
     this.shapes.box.draw( caller, this.uniforms, floor_transform, this.materials.water);
-    let box_transform = Mat4.translation(0, 1, 0).times(Mat4.scale(1, 1, 1));
-    this.shapes.box.draw( caller, this.uniforms, box_transform, { ...this.materials.plastic, color: blue } );
+    // Cube
+    this.shapes.box.draw( caller, this.uniforms, Mat4.translation(0, 1, 0).times(Mat4.scale(1, 1, 1)), { ...this.materials.plastic, color: blue } );
+    this.shapes.traffic.draw( caller, this.uniforms, Mat4.translation(4, 1, 0).times(Mat4.scale(1, 1, 1)), { ...this.materials.plastic, color: blue } );
 
 
 
@@ -255,6 +208,7 @@ export class DragonDemo extends DragonDemoBase
     let x = final_transform[0][3];
     let y = final_transform[1][3];
     let z = final_transform[2][3]; // could just use tovec3 to convert matrix to vector3
+    const fabrik_target = vec3(x, y, z);
     
 
     // code for the delay startup (prevent wacky lag in the beginning destroying particles)
@@ -277,18 +231,19 @@ export class DragonDemo extends DragonDemoBase
     point = this.spline.computePoint((t / 50) % 1); // Use the circular spline
     
     // this.particleSystem.setParticle(0, 1000, [x, y, z, 0, 0, 0]); // uncomment to make dragon follow camera
-    this.particleSystem.setParticle(0, 10, [point[0], point[1], point[2], 0, 0, 0]); // Dragon follows spline
-    this.particleSystem.draw(caller, this.uniforms, this.shapes, this.materials);
- 
+    
+    // this.particleSystem.setParticle(0, 10, [point[0], point[1], point[2], 0, 0, 0]); // Dragon follows spline
+    // this.particleSystem.draw(caller, this.uniforms, this.shapes, this.materials);
+    this.dragon1.draw(caller, this.uniforms, point);
  
     // Fabrik Dragon test
-
-    // Set a target for the tail's tip (e.g., this could be animated over time)
-    this.dragonTail.setTarget(vec3(x, y, z)); // Follow camera
-    // this.dragonTail.setTarget(vec3(point2[0], point2[1], point2[2]));
-    this.dragonTail.update(10);  // Run several iterations to smooth out the IK solution
-    // In your draw routine, render the chain:
-    this.dragonTail.display(caller, this.uniforms, this.shapes, this.materials);
+    this.dragon2.draw(caller, this.uniforms, fabrik_target);
+    // // Set a target for the tail's tip (e.g., this could be animated over time)
+    // this.dragonTail.setTarget(vec3(x, y, z)); // Follow camera
+    // // this.dragonTail.setTarget(vec3(point2[0], point2[1], point2[2]));
+    // this.dragonTail.update(10);  // Run several iterations to smooth out the IK solution
+    // // In your draw routine, render the chain:
+    // this.dragonTail.display(caller, this.uniforms, this.shapes, this.materials);
   }
 
   render_controls()

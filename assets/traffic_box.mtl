@@ -1,0 +1,13 @@
+# Blender 4.3.2 MTL File: 'None'
+# www.blender.org
+
+newmtl MI_Traffic_Signal_Control_Cabinet_uh4ffdmga_2K
+Ns 200.000000
+Ka 1.000000 1.000000 1.000000
+Ks 1.000000 1.000000 1.000000
+Ke 0.000000 0.000000 0.000000
+Ni 1.500000
+d 1.000000
+illum 3
+map_Kd C:/Users/nguye/OneDrive/Documents/blenderFiles/UnrealTextures/traffitSignal/T_Traffic_Signal_Control_Cabinet_uh4ffdmga_2K_D.EXR
+map_Bump -bm 1.000000 C:/Users/nguye/OneDrive/Documents/blenderFiles/UnrealTextures/traffitSignal/T_Traffic_Signal_Control_Cabinet_uh4ffdmga_2K_N.EXR

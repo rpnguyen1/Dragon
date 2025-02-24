@@ -805,7 +805,7 @@ resolveGroundCollisions(t_step) {
     }
 
 
-    const blue = color( 0,0,1,1 ), white = color( 1,1,1,1 );
+    // const blue = color( 0,0,1,1 ), white = color( 1,1,1,1 );
     // Draw particles
     for (let particle of this.particles) {
       const post = particle.position; 
@@ -815,7 +815,7 @@ resolveGroundCollisions(t_step) {
       // let transform = Mat4.translation(...particle.position)
       //   .times(Mat4.scale(0.1, 0.1, 0.1)); // Adjust size if needed
       if (particle.model == null) {
-        shapes.ball.draw(caller, uniforms, model_transform, { ...materials.metal, color: blue });        
+        // shapes.ball.draw(caller, uniforms, model_transform, { ...materials.metal, color: blue });        
       } else{
         particle.model.draw(caller, uniforms, model_transform, particle.material);        
       }
@@ -855,7 +855,7 @@ resolveGroundCollisions(t_step) {
         model_transform.pre_multiply(Mat4.translation(center[0], center[1], center[2]));
 
         if (spring.model == null) {
-          shapes.cylinder.draw(caller, uniforms, model_transform, { ...materials.metal, color: white });
+          // shapes.cylinder.draw(caller, uniforms, model_transform, { ...materials.metal, color: white });
         } else{
           spring.model.draw(caller, uniforms, model_transform, spring.material);
 
