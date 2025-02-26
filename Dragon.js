@@ -24,6 +24,7 @@ import {tiny, defs} from './examples/common.js';
 import {Hermit_spline, Curve_Shape }from './hermit.js';
 import {SpringMass }from './simulation.js';
 import { Fabrik } from './fabrik.js'; // Forward And Backward Reaching Inverse Kinematics just for testing 
+import { ParticleProducer } from './Particles.js';
 
 
 // Pull these names into this module's scope for convenience:
@@ -41,7 +42,7 @@ export class Dragon {
     }
 
     // Default behavior (can be overridden)
-    breatheFire() {
+    breatheFire(fire_particles) {
         console.log(`${this.name} breathes fire!`);
     }
 
@@ -172,20 +173,24 @@ export class FabrikDragon extends Dragon {
     }
     init(){
         this.dragonTail = new Fabrik(vec3(0, 10, 0), 20, 3);
+        this.mouth = new ParticleProducer(this.get_head_position());
     }
     draw(caller, uniforms, target){
         // Set a target for the tail's tip (e.g., this could be animated over time)
         this.dragonTail.setTarget(target); // Follow camera
         // this.dragonTail.setTarget(vec3(point2[0], point2[1], point2[2]));
         this.dragonTail.update(10);  // Run several iterations to smooth out the IK solution
+        // Update dragon mouth
+        this.mouth.position = this.get_head_position();
         // In your draw routine, render the chain:
         this.dragonTail.display(caller, uniforms, this.shapes, this.materials);
     }
-    breatheFire() {
+    breatheFire(fire_particles) {
         console.log(` breathes an fiery blast!`);
+        this.mouth.add_particles(0.1, 0.1, vec3(-1, 0, 0), fire_particles);
     }
     get_head_position() {
-        return this.dragonTail.segments[this.dragonTail.numSegments - 1];
+        return this.dragonTail.segments[this.dragonTail.numSegments - 1].position;
     }
 }
 

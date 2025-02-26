@@ -6,6 +6,7 @@ import {Hermit_spline, Curve_Shape }from './hermit.js';
 import {SpringMass }from './simulation.js';
 import { Fabrik } from './fabrik.js'; // Forward And Backward Reaching Inverse Kinematics just for testing 
 import { SpringMassDragon, FabrikDragon } from './Dragon.js'; // Import dragon types???
+import { Particle } from './Particles.js';
 
 
 // Pull these names into this module's scope for convenience:
@@ -99,6 +100,12 @@ const DragonDemoBase = defs.DragonDemoBase =
         /************************************* Fabrik dragon implementation ****************************************/
         // Suppose you want a chain starting at (0, 10, 0) with 10 segments:
         this.dragon2 = new FabrikDragon(this.shapes, this.materials);
+
+        // World particles from fire
+        this.fire_particles = [];
+
+        this.d_t = 0.01
+        this.start = false;
       }
 
       // // Mass distribution: Heavier in the middle, tapering at both ends.
@@ -206,11 +213,15 @@ export class DragonDemo extends DragonDemoBase
     this.shapes.traffic.draw( caller, this.uniforms, Mat4.translation(4, 1, 0).times(Mat4.scale(1, 1, 1)), { ...this.materials.plastic, color: blue } );
     // this.shapes.square.draw( caller, this.uniforms, Mat4.translation(6, 1, 0).times(Mat4.scale(1, 1, 1)), this.materials.basic);
 
-    document.addEventListener('keydown', (event) => {
-      if(event.key == "e") {
-        this.dragon2.breatheFire();
-      }
-    });
+    if(!this.start) {
+      let breathe_fire = debounce((event) => {
+        if(event.key == "e") {
+          this.dragon2.breatheFire(this.fire_particles);
+        }
+      }, 250);
+      document.addEventListener('keydown', breathe_fire);    // Add listener
+      this.start = true;
+    }
 
     // this code is to attach an object to the front of the camera
     let base_transform_r = Mat4.identity().times(Mat4.scale(0.2,0.2,0.2).times(Mat4.translation(2.5,-1.5,-100)));
@@ -232,8 +243,7 @@ export class DragonDemo extends DragonDemoBase
         point = [-adjustedT, 10 * Math.sin(adjustedT) + 10, 0];
     }
 
-    let dragon_head = this.dragon2.get_head_position();
-    let ball_transform2 = Mat4.translation(dragon_head.position[0], dragon_head.position[1] + 5, dragon_head.position[2])
+    let ball_transform2 = Mat4.translation(this.dragon2.mouth.position[0], this.dragon2.mouth.position[1] + 5, this.dragon2.mouth.position[2])
     .times(Mat4.scale(this.ball_radius, this.ball_radius, this.ball_radius));
     this.shapes.ball.draw( caller, this.uniforms, ball_transform2, { ...this.materials.metal, color: blue } );
     
@@ -255,8 +265,29 @@ export class DragonDemo extends DragonDemoBase
     // this.dragonTail.update(10);  // Run several iterations to smooth out the IK solution
     // // In your draw routine, render the chain:
     // this.dragonTail.display(caller, this.uniforms, this.shapes, this.materials);
+    let dt = 1.0 / 30.0;
+    let t_sim = t;
+    let t_next = t_sim + dt;
+    for(; t_sim<=t_next; t_sim += this.d_t) {
+      this.update_particles();
+      for(let p of this.fire_particles) {
+        this.shapes.ball.draw( caller, this.uniforms, p.particle_transform, { ...this.materials.metal, color: blue } );
+      }
+    }
 
-    // this.dragon2.breatheFire();
+  }
+
+  integrate(p) {
+    p.velocity = p.velocity.plus(p.net_force.times(this.d_t / p.mass));
+    p.position = p.position.plus(p.velocity.times(this.d_t));
+  }
+
+  update_particles(){
+    // Integration
+    for(let p of this.fire_particles) {
+      this.integrate(p);
+      p.update_transform();
+    }
   }
 
   render_controls()
@@ -338,7 +369,14 @@ export class DragonDemo extends DragonDemoBase
         <p>Richard Nguyen | Patrick Dai | Delia Ivascu</p>
     `;
   }
+}
 
-  
-
+const debounce = (callback, wait) => {
+  let timeoutId = null;
+  return (...args) => {
+    window.clearTimeout(timeoutId);
+    timeoutId = window.setTimeout(() => {
+      callback(...args);
+    }, wait);
+  };
 }
