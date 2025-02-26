@@ -49,6 +49,10 @@ export class Dragon {
     fly() {
         console.log(`${this.name} is flying through the sky.`);
     }
+
+    get_head_position() {
+        console.log("Getting head position!");
+    }
 }
 
 // SpringMassDragon - Extends the base Dragon classs
@@ -178,7 +182,10 @@ export class FabrikDragon extends Dragon {
         this.dragonTail.display(caller, uniforms, this.shapes, this.materials);
     }
     breatheFire() {
-        console.log(` breathes an icy blast!`);
+        console.log(` breathes an fiery blast!`);
+    }
+    get_head_position() {
+        return this.dragonTail.segments[this.dragonTail.numSegments - 1];
     }
 }
 

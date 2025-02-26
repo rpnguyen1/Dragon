@@ -185,7 +185,7 @@ const DragonDemoBase = defs.DragonDemoBase =
 
 
 export class DragonDemo extends DragonDemoBase
-{                                                    
+{    
   // See the other piece, My_Demo_Base, if you need to see the setup code.
   render_animation( caller )
   {                                                // display():  Called once per frame of animation.
@@ -206,7 +206,11 @@ export class DragonDemo extends DragonDemoBase
     this.shapes.traffic.draw( caller, this.uniforms, Mat4.translation(4, 1, 0).times(Mat4.scale(1, 1, 1)), { ...this.materials.plastic, color: blue } );
     // this.shapes.square.draw( caller, this.uniforms, Mat4.translation(6, 1, 0).times(Mat4.scale(1, 1, 1)), this.materials.basic);
 
-
+    document.addEventListener('keydown', (event) => {
+      if(event.key == "e") {
+        this.dragon2.breatheFire();
+      }
+    });
 
     // this code is to attach an object to the front of the camera
     let base_transform_r = Mat4.identity().times(Mat4.scale(0.2,0.2,0.2).times(Mat4.translation(2.5,-1.5,-100)));
@@ -228,8 +232,8 @@ export class DragonDemo extends DragonDemoBase
         point = [-adjustedT, 10 * Math.sin(adjustedT) + 10, 0];
     }
 
-
-    let ball_transform2 = Mat4.translation(point[0], point[1], point[2])
+    let dragon_head = this.dragon2.get_head_position();
+    let ball_transform2 = Mat4.translation(dragon_head.position[0], dragon_head.position[1] + 5, dragon_head.position[2])
     .times(Mat4.scale(this.ball_radius, this.ball_radius, this.ball_radius));
     this.shapes.ball.draw( caller, this.uniforms, ball_transform2, { ...this.materials.metal, color: blue } );
     
@@ -251,6 +255,8 @@ export class DragonDemo extends DragonDemoBase
     // this.dragonTail.update(10);  // Run several iterations to smooth out the IK solution
     // // In your draw routine, render the chain:
     // this.dragonTail.display(caller, this.uniforms, this.shapes, this.materials);
+
+    // this.dragon2.breatheFire();
   }
 
   render_controls()
@@ -329,7 +335,10 @@ export class DragonDemo extends DragonDemoBase
   render_explanation() { 
     this.document_region.innerHTML += `
         <p><strong>Dragon</strong></p>
-        <p>Patricsk Dai | Richard Nguyen | Delia Ivascu</p>
+        <p>Richard Nguyen | Patrick Dai | Delia Ivascu</p>
     `;
   }
+
+  
+
 }
