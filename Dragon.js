@@ -180,7 +180,7 @@ export class FabrikDragon extends Dragon {
         // Set a target for the tail's tip (e.g., this could be animated over time)
         this.dragonTail.setTarget(target); // Follow camera
         // this.dragonTail.setTarget(vec3(point2[0], point2[1], point2[2]));
-        this.dragonTail.update(10);  // Run several iterations to smooth out the IK solution
+        this.dragonTail.update(1);  // Run several iterations to smooth out the IK solution
         // Update dragon mouth
         this.mouth.position = this.get_head_position();
         // In your draw routine, render the chain:
@@ -203,7 +203,11 @@ export class FabrikDragon extends Dragon {
             let rot = rot_x.times(rot_y);
             let new_v = rot.times(v);
 
+<<<<<<< HEAD
             this.mouth.add_particles(0.1, 0.1, new_v.normalized().times(mag), fire_particles);
+=======
+            this.mouth.add_particles(0.1, 2, new_v.normalized().times(3), fire_particles);
+>>>>>>> ac67abe913ccee89f71920364cae77382fa6be74
         }
     }
     get_head_position() {
