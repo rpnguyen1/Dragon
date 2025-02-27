@@ -173,7 +173,7 @@ export class FabrikDragon extends Dragon {
         // Set a target for the tail's tip (e.g., this could be animated over time)
         this.dragonTail.setTarget(target); // Follow camera
         // this.dragonTail.setTarget(vec3(point2[0], point2[1], point2[2]));
-        this.dragonTail.update(10);  // Run several iterations to smooth out the IK solution
+        this.dragonTail.update(1);  // Run several iterations to smooth out the IK solution
         // In your draw routine, render the chain:
         this.dragonTail.display(caller, uniforms, this.shapes, this.materials);
     }

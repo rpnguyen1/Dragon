@@ -32,6 +32,7 @@ export class Fabrik {
     this.root = vec3(root[0], root[1], root[2]);
     this.segments = [];
     this.numSegments = numSegments;
+    this.t = 0;
 
     // Initialize segments in a straight line from the root along the x-axis.
     let currentPos = this.root.copy();
@@ -70,6 +71,14 @@ export class Fabrik {
       let direction = next.position.minus(current.position).normalized().times(current.length);
       // Update the current segment's position so that it is at the correct distance from next.
       current.position = next.position.minus(direction);
+
+      // add wiggle??
+      // const t = this.t;
+      // const wiggle = vec3(0, 
+      //                     0.3 * (Math.PI / 180) * Math.sin(t / 10), 
+      //                     0);
+      // current.position = current.position.plus(wiggle);
+    
     }
   }
 
@@ -127,6 +136,8 @@ export class Fabrik {
       let p1 = this.segments[i].position;
       let p2 = this.segments[i + 1].position;
 
+      this.t = uniforms.animation_time/1000;
+
       // Convert positions to vec3 if necessary.
       let pos1 = vec3(p1[0], p1[1], p1[2]);
       let pos2 = vec3(p2[0], p2[1], p2[2]);
@@ -135,7 +146,18 @@ export class Fabrik {
       const center = pos1.plus(pos2).times(0.5);
 
       // Start with a default model transform.
-      let model_transform = Mat4.scale(-1, -len / 2, -1);
+      let model_transform; 
+
+      if (i == this.segments.length - 3 ){
+        model_transform = Mat4.scale(-0.7, -len / 2, -0.7);
+      } else if (i == this.segments.length - 4 ){
+        model_transform = Mat4.scale(-0.8, -len / 2, -0.8);
+      } else if (i == this.segments.length - 5 ){
+        model_transform = Mat4.scale(-0.9, -len / 2, -0.9);
+      } else {
+        model_transform = Mat4.scale(-1, -len / 2, -1);
+
+      }
       
       // Compute the direction vector from pos1 to pos2.
       const p = pos1.minus(pos2).normalized();
@@ -150,10 +172,10 @@ export class Fabrik {
       model_transform.pre_multiply(Mat4.rotation(theta, w[0], w[1], w[2]));
       model_transform.pre_multiply(Mat4.translation(center[0], center[1], center[2]));
       if (i == this.segments.length - 2 ){
-        shapes.head.draw(caller, uniforms, model_transform, { ...materials.metal, color: blue });
+        shapes.head.draw(caller, uniforms, model_transform, materials.dragon);
 
       } else{
-        shapes.body.draw(caller, uniforms, model_transform, { ...materials.metal, color: blue });
+        shapes.body.draw(caller, uniforms, model_transform, materials.dragon);
 
       }
     }

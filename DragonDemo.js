@@ -177,7 +177,7 @@ const DragonDemoBase = defs.DragonDemoBase =
         this.uniforms.lights = [ defs.Phong_Shader.light_source( light_position, light_color, 1000000 ) ];
         this.shapes.ball.draw( caller, this.uniforms, Mat4.translation(20, 20, 20), this.materials.water);
         this.uniforms.lights.push(defs.Phong_Shader.light_source( vec4(20, 10, 30, 1.0), color( 0.1,1,1,1 ), 1000 ) )
-        this.shapes.ball.draw( caller, this.uniforms, Mat4.translation(20, 10, 30), this.materials.water);
+        this.shapes.head.draw( caller, this.uniforms, Mat4.translation(20, 10, 30), this.materials.water);
 
         // this._debug_fps = caller.fps;
       }
@@ -329,7 +329,7 @@ export class DragonDemo extends DragonDemoBase
   render_explanation() { 
     this.document_region.innerHTML += `
         <p><strong>Dragon</strong></p>
-        <p>Patricsk Dai | Richard Nguyen | Delia Ivascu</p>
+        <p>Patrick Dai | Richard Nguyen | Delia Ivascu</p>
     `;
   }
 }

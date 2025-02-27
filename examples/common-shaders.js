@@ -1134,6 +1134,40 @@ const Fog_Shader = defs.Fog_Shader =
 
 const Scroll_Fog_Shader = defs.Scroll_Fog_Shader =
   class Scroll_Fog_Shader extends Phong_Shader2 {
+    vertex_glsl_code () {         // ********* VERTEX SHADER *********
+      return this.shared_glsl_code () + `
+    varying vec2 f_tex_coord;
+    attribute vec3 position, normal;                            // Position is expressed in object coordinates.
+    attribute vec2 texture_coord;
+  
+    uniform mat4 model_transform;
+    uniform mat4 projection_camera_model_transform;
+    uniform float animation_time;  // animation_time uniform to animate the motion
+    
+    float noise(float x) {
+      return sin(x) * 0.5 + 0.5;  // Simple oscillating noise-like function.
+    }
+
+    void main() {
+      // Distorted wave: Using multiple sine functions + simple noise for distortion
+        vec3 animated_position = position;
+
+        float wave1 = sin(animation_time + position.x * 0.2) * 3.0;
+        float wave2 = sin(animation_time * 0.5 + position.y * 0.3) * 1.3;
+        float wave3 = sin(animation_time * 2.0 + position.z * 0.1) * 2.2;
+
+        // Add noise-based distortion
+        float noise_factor = noise(animation_time + position.x * 0.5) * 0.1;  // Noise modulates the wave
+        animated_position.y += wave1 + wave2 + wave3 + noise_factor; // Add the distortion
+
+        gl_Position = projection_camera_model_transform * vec4( animated_position, 1.0 );     
+        
+        N = normalize( mat3( model_transform ) * normal / squared_scale);
+
+        vertex_worldspace = ( model_transform * vec4( animated_position, 1.0 ) ).xyz;
+        f_tex_coord = texture_coord;
+      } `;
+  }
     fragment_glsl_code () {                            // ********* FRAGMENT SHADER *********
       return this.shared_glsl_code () + `
     varying vec2 f_tex_coord;
