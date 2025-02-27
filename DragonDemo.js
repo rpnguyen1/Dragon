@@ -274,7 +274,7 @@ export class DragonDemo extends DragonDemoBase
 
     let ball_transform2 = Mat4.translation(this.dragon2.mouth.position[0], this.dragon2.mouth.position[1] + 5, this.dragon2.mouth.position[2])
     .times(Mat4.scale(this.ball_radius, this.ball_radius, this.ball_radius));
-    this.shapes.ball.draw( caller, this.uniforms, ball_transform2, { ...this.materials.metal, color: blue } );
+    this.shapes.ball.draw( caller, this.uniforms, ball_transform2, { ...this.materials.metal, color: yellow } );
     
     this.curve.draw(caller, this.uniforms);
 
@@ -288,8 +288,8 @@ export class DragonDemo extends DragonDemoBase
     this.dragon1.draw(caller, this.uniforms, fabrik_target);
  
     // Fabrik Dragon test
-    // this.dragon2.draw(caller, this.uniforms, fabrik_target);
-    this.dragon2.draw(caller, this.uniforms, point);
+    this.dragon2.draw(caller, this.uniforms, fabrik_target);
+    // this.dragon2.draw(caller, this.uniforms, point);
     // // Set a target for the tail's tip (e.g., this could be animated over time)
     // this.dragonTail.setTarget(vec3(x, y, z)); // Follow camera
     // // this.dragonTail.setTarget(vec3(point2[0], point2[1], point2[2]));
