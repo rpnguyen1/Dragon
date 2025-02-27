@@ -1255,15 +1255,37 @@ const Scroll_Fog_Shader = defs.Scroll_Fog_Shader =
       return this.shared_glsl_code () + `
     varying vec2 f_tex_coord;
     uniform sampler2D texture;
+    uniform sampler2D distort;
     uniform float animation_time;
 
+    float random(vec2 st) { 
+        return fract(sin(dot(st, vec2(12.9898, 78.233))) * 43758.5453123);
+    }
+
     void main()  {        
+        vec2 tilingFactor = vec2(2.0, 2.0);
+
         vec2 f_tex_2 = f_tex_coord;
-        vec2 f_tex_3 = vec2(f_tex_2.s, f_tex_2.t - 0.02 * animation_time);
+        vec2 f_tex_2_distorted = f_tex_2 * tilingFactor;
+        float distortion_intensity = 0.01;
 
+        vec2 f_tex_distort = vec2(f_tex_2_distorted.s - 0.05 * animation_time, f_tex_2_distorted.t - 0.04 * animation_time);
+        vec3 texColorDistort = texture2D(distort, f_tex_coord * f_tex_distort).rgb;
+        vec2 distortion = (texColorDistort.rg - 0.5) * distortion_intensity ;
+        
+        vec2 f_tex_2_distorted2 = f_tex_2 * vec2(0.5, 0.5);
+        float distortion_intensity2 = 0.1;
 
-        // vec4 tex_color = texture2D( texture, f_tex_coord );       // Sample texture image in the correct place.
-        vec4 tex_color = texture2D( texture, f_tex_3 );       // Sample texture image in the correct place.
+        vec2 f_tex_distort2 = vec2(f_tex_2_distorted2.s - 0.01 * animation_time, f_tex_2_distorted2.t - 0.02 * animation_time);
+        vec3 texColorDistort2 = texture2D(distort, f_tex_coord * f_tex_distort2).rgb;
+        vec2 distortion2 = (texColorDistort2.rg - 0.5) * distortion_intensity2 ;
+
+        vec2 maintilingFactor = vec2(1.3, 1.3);
+        vec2 f_tex_2_tiled_main = f_tex_2 * maintilingFactor;
+        vec2 f_tex_3 = vec2(f_tex_2_tiled_main.s + 0.005 * sin(animation_time), f_tex_2_tiled_main.t - 0.02 * animation_time);
+
+      
+        vec4 tex_color = texture2D( texture, f_tex_3 + distortion + distortion2);       // Sample texture image in the correct place.
         if( tex_color.w < .01 ) discard;
                         
         // This time, slightly disturb normals based on sampling the same image that was used for texturing.
@@ -1288,7 +1310,14 @@ const Scroll_Fog_Shader = defs.Scroll_Fog_Shader =
   update_GPU(context, gpu_addresses, uniforms, model_transform, material) {
     // update_GPU(): Add a little more to the base class's version of this method.
     super.update_GPU(context, gpu_addresses, uniforms, model_transform, material);
-    // Updated for assignment 4
+
+    if (material.distort && material.distort.ready) {
+      // Select texture unit 0 for the fragment shader Sampler2D uniform called "texture":
+      context.uniform1i (gpu_addresses.distort, 1);
+      // For this draw, use the texture image from correct the GPU buffer:
+      material.distort.activate (context, 1);
+    }
+
     context.uniform1f(gpu_addresses.animation_time, uniforms.animation_time / 1000);
   }
 }
@@ -1359,15 +1388,15 @@ uniform mat4 projection_camera_model_transform;
 
 void main() {
     vec3 animated_position = position;
-    animated_position.x += sin(animation_time + position.x * 0.2) * 0.1;
+    // animated_position.x += sin(animation_time + position.x * 0.2) * 0.1;
   
     // gl_Position = projection_camera_model_transform * vec4( position, 1.0 );     // Move vertex to final space.
-    gl_Position = projection_camera_model_transform * vec4( animated_position, 1.0 );     // Move vertex to final space.
+    gl_Position = projection_camera_model_transform * vec4( position, 1.0 );     // Move vertex to final space.
                                       // The final normal vector in screen space.
     N = normalize( mat3( model_transform ) * normal / squared_scale);
 
     // vertex_worldspace = ( model_transform * vec4( position, 1.0 ) ).xyz;
-    vertex_worldspace = ( model_transform * vec4( animated_position, 1.0 ) ).xyz;
+    vertex_worldspace = ( model_transform * vec4( position, 1.0 ) ).xyz;
                                       // Turn the per-vertex texture coordinate into an interpolated variable.
     f_tex_coord = texture_coord;
   } `;
@@ -1377,6 +1406,7 @@ fragment_glsl_code () {        // ********* FRAGMENT SHADER *********
   varying vec2 f_tex_coord;
   uniform sampler2D textured;
   uniform sampler2D texturea;
+  uniform sampler2D distort;
   uniform float speed;
 
 
@@ -1387,12 +1417,22 @@ fragment_glsl_code () {        // ********* FRAGMENT SHADER *********
 
 
   void main() {
-
-      //////////////////////////// base texture
       vec2 f_tex_2 = f_tex_coord; // Base texture coordinates
+
+      ///////////// distortion
+
+       vec2 tilingFactor = vec2(0.5, 0.25);
+      vec2 f_tex_2_distorted = f_tex_2 * tilingFactor;
+      float distortion_intensity = 0.02;
+      vec2 f_tex_distort = vec2(f_tex_2_distorted.s - 0.01 * animation_time, f_tex_2_distorted.t - 0.025 * animation_time);
+      vec3 texColorDistort = texture2D(distort, f_tex_coord * f_tex_distort).rgb;
+      vec2 distortion = (texColorDistort.rg - 0.5) * distortion_intensity ;
+
+      //////////////////////////// base texture , Flames
 
       // Compute the current frame index (looping)
       float frame_index = floor(mod(animation_time * speed, TOTAL_FRAMES));
+      // float frame_index = 0.0;
 
       // Determine sprite row and column (use float instead of int)
       float frame_x = mod(frame_index, SPRITE_COLS); // Column index
@@ -1405,16 +1445,18 @@ fragment_glsl_code () {        // ********* FRAGMENT SHADER *********
       // Adjust texture coordinates to select the correct sprite
       vec2 f_tex_3 = f_tex_2 * sprite_size + sprite_offset;
 
-      vec4 tex_color = texture2D( textured, f_tex_3 );      
+      vec4 tex_color = texture2D( textured, f_tex_3 + distortion);      
 
+      ///////////////////// Flame Layer
+      vec2 distortion2 = (texColorDistort.rg - 0.5) * 0.8 ;
 
       vec2 f_tex_2a = f_tex_coord;
-      vec2 f_tex_3a = vec2(f_tex_2a.s, f_tex_2a.t - 1.0 * animation_time);
-      vec4 tex_color2 = texture2D( texturea, f_tex_3a );   
+      vec2 f_tex_3a = vec2(f_tex_2a.s, f_tex_2a.t - 0.5 * animation_time);
+      vec4 tex_color2 = texture2D( texturea, f_tex_3a + distortion2);   
 
-      vec2 f_tex_2b = f_tex_coord;
-      vec2 f_tex_3b = vec2(f_tex_2a.s - 2.0 * animation_time, f_tex_2a.t);
-      vec4 tex_color3 = texture2D( texturea, f_tex_3a );   
+      // vec2 f_tex_2b = f_tex_coord;
+      // vec2 f_tex_3b = vec2(f_tex_2a.s - 0.1 * animation_time, f_tex_2a.t);
+      // vec4 tex_color3 = texture2D( texturea, f_tex_3a + distortion);   
 
       float darkness = 1.0 - length(tex_color.rgb); // 1 when black, 0 when white
       float alpha = tex_color.w * (1.0 - darkness); // Reduce alpha based on darkness
@@ -1422,7 +1464,7 @@ fragment_glsl_code () {        // ********* FRAGMENT SHADER *********
       if (alpha < 0.05) discard; // Optional: Fully discard near-zero alpha
 
                                                                // Compute an initial (ambient) color:
-      gl_FragColor = vec4( ( min(tex_color.xyz * tex_color3.xyz + tex_color3.xyz, 1.0)  + shape_color.xyz ) * ambient, shape_color.w * alpha);
+      gl_FragColor = vec4( ( min(tex_color.xyz * (tex_color2.xyz + tex_color2.xyz), 1.0)  + shape_color.xyz ) * ambient, shape_color.w * alpha);
                                                                // Compute the final color with contributions from lights:
       gl_FragColor.xyz += phong_model_lights( normalize( N ), vertex_worldspace );
     } `;
@@ -1484,6 +1526,14 @@ update_GPU (context, gpu_addresses, uniforms, model_transform, material) {
       context.uniform1i (gpu_addresses.texturea, 1);
       // For this draw, use the texture image from correct the GPU buffer:
       material.texturea.activate (context, 1);
+    }
+
+    
+    if (material.distort && material.distort.ready) {
+      // Select texture unit 0 for the fragment shader Sampler2D uniform called "texture":
+      context.uniform1i (gpu_addresses.distort, 2);
+      // For this draw, use the texture image from correct the GPU buffer:
+      material.distort.activate (context, 2);
     }
   context.uniform1f(gpu_addresses.animation_time, uniforms.animation_time / 1000);
 

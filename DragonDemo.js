@@ -59,7 +59,10 @@ const DragonDemoBase = defs.DragonDemoBase =
           rgb : { shader: new defs.Fake_Bump_Map(), ambient: .1, texture: new Texture( "assets/rgb.jpg" ) },
           sky : { shader: new defs.Fake_Bump_Map(), ambient: 3, texture: new Texture( "assets/doom_sky.jpeg" ) },
           grass : { shader: new defs.Fog_Shader(), ambient: .3, diffusivity: 10, specularity: 0.4, texture: new Texture( "assets/grass.jpg" ) },
-          water : { shader: new defs.Scroll_Fog_Shader(), ambient: .5, diffusivity: 0.6, specularity: 2, texture: new Texture( "assets/water.png" ) },
+          water : { shader: new defs.Scroll_Fog_Shader(), ambient: .5, diffusivity: 0.6, specularity: 2, 
+                  texture: new Texture( "assets/water.png" ), 
+                  distort: new Texture( "assets/T_noise_01_normal.PNG" ), 
+                },
           dragon : { shader: new defs.Fog_Shader(), ambient: .5, texture: new Texture( "assets/EDragon_Body.png" ) },
           gold : { shader: new defs.PhongNShader(), ambient: 0.5, 
                   albedoMap: new Texture( "assets/T_Metal_Gold_D.PNG" ), 
@@ -77,7 +80,9 @@ const DragonDemoBase = defs.DragonDemoBase =
                   texture: new Texture( "assets/T_Smoke_SubUV.PNG" )},
           fire : { shader: new defs.FireShader(), ambient: 2, speed: 50.0, 
                   textured: new Texture( "assets/T_Fire_SubUV.PNG" ), 
-                  texturea: new Texture( "assets/T_Fire_Tiled_D.PNG" )},
+                  texturea: new Texture( "assets/T_Fire_Tiled_D.PNG" ),
+                  distort: new Texture( "assets/T_noise_01_normal.PNG" ), 
+                },
           // Debug/shows silhouette but not model 
           invisible : { shader: new defs.Phong_Shader(), ambient: .2, diffusivity: 1, specularity: .5, color: color( 0, 0, 0, 0 ) },
 
