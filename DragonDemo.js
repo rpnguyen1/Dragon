@@ -219,11 +219,11 @@ export class DragonDemo extends DragonDemoBase
     this.shapes.square.draw( caller, this.uniforms, Mat4.translation(7, 1, 0.1).times(Mat4.scale(1, 1, 1)), this.materials.dust);
 
     if(!this.start) {
-      let breathe_fire = debounce((event) => {
+      let breathe_fire = (event) => {
         if(event.key == "b") {
           this.dragon2.breatheFire(this.fire_particles);
         }
-      }, 100);
+      };
       document.addEventListener('keydown', breathe_fire);    // Add listener
       this.start = true;
     }
@@ -276,7 +276,8 @@ export class DragonDemo extends DragonDemoBase
     for(; t_sim<=t_next; t_sim += this.d_t) {
       this.update_particles();
       for(let p of this.fire_particles) {
-        this.shapes.square.draw( caller, this.uniforms, p.particle_transform, this.materials.explosion);
+        // this.shapes.ball.draw( caller, this.uniforms, p.particle_transform, this.materials.explosion);
+        this.shapes.ball.draw( caller, this.uniforms, p.particle_transform, { ...this.materials.metal, color: blue } );
       }
     }
 
