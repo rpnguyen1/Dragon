@@ -99,11 +99,11 @@ export class SpringMassDragon extends Dragon {
 
           } else if (i == 1){
             // this.particleSystem.link(i, i, i + 1, ks, kd, spacing, this.shapes.teapot, this.materials.rgb, false);
-            this.particleSystem.link(i, i, i + 1, ks, kd, spacing, this.shapes.head, this.materials.dragon, false);
+            this.particleSystem.link(i, i, i + 1, ks, kd, spacing, this.shapes.head, this.materials.gold, false);
 
           } else{
             // this.particleSystem.link(i, i, i + 1, ks, kd, spacing, this.shapes.teapot, this.materials.rgb, true);
-            this.particleSystem.link(i, i, i + 1, ks, kd, spacing, this.shapes.body, this.materials.dragon, true);
+            this.particleSystem.link(i, i, i + 1, ks, kd, spacing, this.shapes.body, this.materials.gold, true);
 
           }
         }

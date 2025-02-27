@@ -47,7 +47,7 @@ const DragonDemoBase = defs.DragonDemoBase =
           'body' : new defs.Shape_From_File("assets/dragon_body.obj"), // these dragon models are temporary!!!!!
           'head' : new defs.Shape_From_File("assets/dragon.obj"),
           'teapot' : new defs.Shape_From_File("assets/teapot.obj"),
-          'traffic' : new defs.Shape_From_File("assets/traffic_box.obj"),
+          'sky' : new defs.Shape_From_File("assets/sky_dome.obj"),
         };
 
         // *** Materials: ***  Basic_Shader() Phong_Shader() Textured_Phong() Fake_Bump_Map()
@@ -57,12 +57,27 @@ const DragonDemoBase = defs.DragonDemoBase =
           metal   : { shader: new defs.Phong_Shader2(), ambient: .2, diffusivity: 1, specularity:  1, colors: color( .9,.5,.9,1 ) },
           // Textures
           rgb : { shader: new defs.Fake_Bump_Map(), ambient: .1, texture: new Texture( "assets/rgb.jpg" ) },
+          sky : { shader: new defs.Fake_Bump_Map(), ambient: 3, texture: new Texture( "assets/doom_sky.jpeg" ) },
           grass : { shader: new defs.Fog_Shader(), ambient: .3, diffusivity: 10, specularity: 0.4, texture: new Texture( "assets/grass.jpg" ) },
           water : { shader: new defs.Scroll_Fog_Shader(), ambient: .5, diffusivity: 0.6, specularity: 2, texture: new Texture( "assets/water.png" ) },
           dragon : { shader: new defs.Fog_Shader(), ambient: .5, texture: new Texture( "assets/EDragon_Body.png" ) },
-          explosion : { shader: new defs.Textured_Phong_alpha(), ambient: .5, texture: new Texture( "assets/T_Explosion_SubUV.PNG" ) },
+          gold : { shader: new defs.PhongNShader(), ambient: 0.5, 
+                  albedoMap: new Texture( "assets/T_Metal_Gold_D.PNG" ), 
+                  normalMap: new Texture( "assets/EDragon_Body.png" ), 
+                },
+          Brick : { shader: new defs.PhongNShader(), ambient: 0.5, 
+                  albedoMap: new Texture( "assets/T_Brick_Cut_Stone_D.PNG" ), 
+                  normalMap: new Texture( "assets/T_Brick_Cut_Stone_N.PNG" ), 
+                },
+
           dust : { shader: new defs.Textured_Phong(), ambient: .5, texture: new Texture( "assets/T_Dust_Particle_D.PNG" ) },
-          fire : { shader: new defs.Textured_Phong_alpha(), ambient: .5, texture: new Texture( "assets/T_Fire_SubUV.PNG" ) },
+          explosion : { shader: new defs.AnimatedShader(), ambient: 1, speed: 100.0, rows: 6.0, cols: 6.0,
+                  texture: new Texture( "assets/T_Explosion_SubUV.PNG" )},
+          smoke : { shader: new defs.AnimatedShader(), ambient: 1, speed: 10.0, rows: 8.0, cols: 8.0,
+                  texture: new Texture( "assets/T_Smoke_SubUV.PNG" )},
+          fire : { shader: new defs.FireShader(), ambient: 2, speed: 50.0, 
+                  textured: new Texture( "assets/T_Fire_SubUV.PNG" ), 
+                  texturea: new Texture( "assets/T_Fire_Tiled_D.PNG" )},
           // Debug/shows silhouette but not model 
           invisible : { shader: new defs.Phong_Shader(), ambient: .2, diffusivity: 1, specularity: .5, color: color( 0, 0, 0, 0 ) },
 
@@ -186,7 +201,8 @@ const DragonDemoBase = defs.DragonDemoBase =
         const light_color = color(this.settings.LightColor[0], this.settings.LightColor[1], this.settings.LightColor[2], this.settings.LightColor[3])
         this.uniforms.lights = [ defs.Phong_Shader.light_source( light_position, light_color, 1000000 ) ];
         this.shapes.ball.draw( caller, this.uniforms, Mat4.translation(20, 20, 20), this.materials.water);
-        this.uniforms.lights.push(defs.Phong_Shader.light_source( vec4(20, 10, 30, 1.0), color( 0.1,1,1,1 ), 1000 ) )
+
+        this.uniforms.lights.push(defs.Phong_Shader.light_source( vec4(20 + Math.sin(t), 10+ Math.sin(t), 30+ Math.sin(t), 0.0), color( 0.1,1,1,1 ), 1000 ) )
         this.shapes.head.draw( caller, this.uniforms, Mat4.translation(20, 10, 30), this.materials.water);
 
         // this._debug_fps = caller.fps;
@@ -206,17 +222,25 @@ export class DragonDemo extends DragonDemoBase
     const blue = color( 0,0,1,1 ), yellow = color( 1,0.7,0,1 );
 
     const t = this.t = this.uniforms.animation_time/1000;
-    this.uniforms.projection_transform = Mat4.perspective( this.settings.FOV * Math.PI/180, caller.width/caller.height, 1, 1000 );
+    this.uniforms.projection_transform = Mat4.perspective( this.settings.FOV * Math.PI/180, caller.width/caller.height, 1, 2000 );
 
     // !!! Draw ground
     let floor_transform = Mat4.translation(0, 0, 0).times(Mat4.scale(100, 0.01, 100));
     this.shapes.box.draw( caller, this.uniforms, floor_transform, this.materials.water);
     // Cube
-    this.shapes.box.draw( caller, this.uniforms, Mat4.translation(0, 1, 0).times(Mat4.scale(1, 1, 1)), { ...this.materials.plastic, color: blue } );
-    this.shapes.traffic.draw( caller, this.uniforms, Mat4.translation(4, 1, 0).times(Mat4.scale(1, 1, 1)), { ...this.materials.plastic, color: blue } );
+
+    const sky_pos = Mat4.extractPositionFromMatrix(this.uniforms.camera_transform);
+    this.shapes.box.draw( caller, this.uniforms, Mat4.translation(0, 1, 0).times(Mat4.scale(1, 1, 1)), this.materials.Brick );
+    // this.shapes.box.draw( caller, this.uniforms, Mat4.translation(-3, 1, -3).times(Mat4.scale(50, 10, 1)), this.materials.gold );
+    this.shapes.sky.draw( caller, this.uniforms, Mat4.translation(sky_pos[0], sky_pos[1], sky_pos[2]).times(Mat4.scale(1000, 1000, 1000)), this.materials.sky );
+    // this.shapes.box.draw( caller, this.uniforms, Mat4.translation(-5, 50, -10).times(Mat4.scale(50, 100, 1)), this.materials.gold );
+    // this.shapes.box.draw( caller, this.uniforms, Mat4.translation(-5, 50, 80).times(Mat4.scale(50, 100, 1)), this.materials.Brick );
+    
+    
     this.shapes.square.draw( caller, this.uniforms, Mat4.translation(6, 1, 0).times(Mat4.scale(1, 1, 1)), this.materials.explosion);
     this.shapes.square.draw( caller, this.uniforms, Mat4.translation(8, 1, 3).times(Mat4.scale(1, 1, 1)), this.materials.fire);
     this.shapes.square.draw( caller, this.uniforms, Mat4.translation(7, 1, 0.1).times(Mat4.scale(1, 1, 1)), this.materials.dust);
+    this.shapes.square.draw( caller, this.uniforms, Mat4.translation(10, 1, 0.1).times(Mat4.scale(1, 1, 1)), this.materials.smoke);
 
     if(!this.start) {
       let breathe_fire = debounce((event) => {
@@ -260,10 +284,12 @@ export class DragonDemo extends DragonDemoBase
     
     // this.particleSystem.setParticle(0, 10, [point[0], point[1], point[2], 0, 0, 0]); // Dragon follows spline
     // this.particleSystem.draw(caller, this.uniforms, this.shapes, this.materials);
-    this.dragon1.draw(caller, this.uniforms, point);
+    // this.dragon1.draw(caller, this.uniforms, point);
+    this.dragon1.draw(caller, this.uniforms, fabrik_target);
  
     // Fabrik Dragon test
-    this.dragon2.draw(caller, this.uniforms, fabrik_target);
+    // this.dragon2.draw(caller, this.uniforms, fabrik_target);
+    this.dragon2.draw(caller, this.uniforms, point);
     // // Set a target for the tail's tip (e.g., this could be animated over time)
     // this.dragonTail.setTarget(vec3(x, y, z)); // Follow camera
     // // this.dragonTail.setTarget(vec3(point2[0], point2[1], point2[2]));
