@@ -200,7 +200,7 @@ export class FabrikDragon extends Dragon {
             let rot = rot_x.times(rot_y);
             let new_v = rot.times(v);
 
-            this.mouth.add_particles(0.1, 0.1, new_v.normalized().times(20), fire_particles);
+            this.mouth.add_particles(0.1, 2, new_v.normalized().times(3), fire_particles);
         }
     }
     get_head_position() {

@@ -27,6 +27,7 @@ import {Text_Demo}
                     from "./examples/text-demo.js";
 import {Transforms_Sandbox_Base, Transforms_Sandbox}
                     from "./examples/transforms-sandbox.js";
+import {Shadow_Demo} from './examples/shadow-demo.js';
 
 import {DragonDemo}
                     from "./DragonDemo.js";
@@ -42,6 +43,7 @@ Object.assign (defs,
                {Scene_To_Texture_Demo},
                {Text_Demo},
                {Transforms_Sandbox_Base, Transforms_Sandbox},
+               {Shadow_Demo},
                {DragonDemo}
 );
 
