@@ -215,10 +215,10 @@ export class DragonDemo extends DragonDemoBase
 
     if(!this.start) {
       let breathe_fire = debounce((event) => {
-        if(event.key == "e") {
+        if(event.key == "b") {
           this.dragon2.breatheFire(this.fire_particles);
         }
-      }, 250);
+      }, 100);
       document.addEventListener('keydown', breathe_fire);    // Add listener
       this.start = true;
     }

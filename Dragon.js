@@ -173,7 +173,8 @@ export class FabrikDragon extends Dragon {
     }
     init(){
         this.dragonTail = new Fabrik(vec3(0, 10, 0), 20, 3);
-        this.mouth = new ParticleProducer(this.get_head_position());
+        let head_dir = this.get_head_direction().normalized();
+        this.mouth = new ParticleProducer(this.get_head_position().plus(head_dir));
     }
     draw(caller, uniforms, target){
         // Set a target for the tail's tip (e.g., this could be animated over time)
@@ -187,10 +188,28 @@ export class FabrikDragon extends Dragon {
     }
     breatheFire(fire_particles) {
         console.log(` breathes an fiery blast!`);
-        this.mouth.add_particles(0.1, 0.1, vec3(-1, 0, 0), fire_particles);
+        let v = this.get_head_direction();
+        
+        for(let i = 0; i<20; i++) {
+            // We're gonna spit fire in a cone shape. The mouth is the pointy end.
+            let y_angle = Math.PI / 9 * (Math.random() * 2 - 1); // Rotate about y
+            let x_angle = Math.PI / 9 * (Math.random() * 2 - 1); // Rotate about x
+
+            let rot_y = Mat4.rotation(y_angle, 0, 1, 0);
+            let rot_x = Mat4.rotation(x_angle, 1, 0, 0);
+            let rot = rot_x.times(rot_y);
+            let new_v = rot.times(v);
+
+            this.mouth.add_particles(0.1, 0.1, new_v.normalized().times(20), fire_particles);
+        }
     }
     get_head_position() {
         return this.dragonTail.segments[this.dragonTail.numSegments - 1].position;
+    }
+    get_head_direction() {
+        return this.dragonTail.segments[this.dragonTail.numSegments - 1].position.minus(
+            this.dragonTail.segments[this.dragonTail.numSegments - 2].position
+        )
     }
 }
 
