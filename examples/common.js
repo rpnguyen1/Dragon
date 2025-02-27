@@ -1,4 +1,5 @@
 import {tiny} from '../tiny-graphics.js';
+import {tiny3} from './tiny-graphics3.js';
 import {defs as shapes} from './common-shapes.js';
 import {defs as shaders} from './common-shaders.js';
 import {defs as components} from './common-components.js';
@@ -6,7 +7,7 @@ import {defs as components} from './common-components.js';
 const defs = { ...shapes, ...shaders, ...components };
 const {vec3, vec4, Mat4, Shader, UBO} = tiny;
 
-export {tiny, defs};
+export {tiny, defs, tiny3};
 
 
 const Camera = defs.Camera =
