@@ -29,7 +29,7 @@ export class Fabrik {
    */
   constructor(root, numSegments, defaultLength = 10) {
     // Store the root position.
-    this.root = vec3(root[0], root[1], root[2]);
+    this.root = vec3(root[0], root[1], root[2]); // Root for the dragon is the tail.
     this.segments = [];
     this.numSegments = numSegments;
     this.t = 0;

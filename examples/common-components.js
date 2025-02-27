@@ -297,7 +297,7 @@ const Movement_Controls = defs.Movement_Controls =
       render_explanation(document_builder, document_element = document_builder.document_region) { }
       render_controls() {
           this.control_panel.innerHTML += "Click and drag the scene to <br> spin your viewpoint around it.<br>";
-          this.key_triggered_button("Up", ["e"], () => this.thrust[1] = -1, undefined, () => this.thrust[1] = 0);
+          this.key_triggered_button("Up", [" "], () => this.thrust[1] = -1, undefined, () => this.thrust[1] = 0);
           this.key_triggered_button("Forward", ["w"], () => this.thrust[2] = 1, undefined,
                                      () => this.thrust[2] = 0);
           this.new_line();
@@ -306,7 +306,7 @@ const Movement_Controls = defs.Movement_Controls =
           this.key_triggered_button("Right", ["d"], () => this.thrust[0] = -1, undefined,
                                      () => this.thrust[0] = 0);
           this.new_line();
-          this.key_triggered_button("Down", ["q"], () => this.thrust[1] = 1, undefined, () => this.thrust[1] = 0);
+          this.key_triggered_button("Down", ["z"], () => this.thrust[1] = 1, undefined, () => this.thrust[1] = 0);
 
           const speed_controls = this.control_panel.appendChild(document.createElement("span"));
           speed_controls.style.margin = "30px";
