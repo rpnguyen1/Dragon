@@ -175,6 +175,43 @@ export class FabrikDragon extends Dragon {
         this.dragonTail = new Fabrik(vec3(0, 10, 0), 20, 3);
         let head_dir = this.get_head_direction().normalized();
         this.mouth = new ParticleProducer(this.get_head_position().plus(head_dir));
+
+
+        this.fireball = new SpringMass();
+        this.objectPoolSize = 20;
+        this.fireball.createParticle(this.objectPoolSize);
+        for (let i = 0; i < this.objectPoolSize; i++ ){
+            this.fireball.setParticle(i, 10, [0, 10, 10, 0, 0, 0], this.shapes.square, this.materials.explosion, 10.0, true, false);
+
+        }
+        this.objectPoolIndex = 0;
+
+
+        this.shooting = false;
+        this.shootTimer = 0;
+        this.shootInterval = 0.05; // Delay between particles (in seconds)
+        this.shootCounter = 0;
+        this.previousHeadPosition = null; // Initialize previous head position
+
+
+        // this.fireball.createSprings(5);
+        // this.fireball.link(0, 0, 1, 1000, 2000, 1, this.shapes.leg, this.materials.dragon, true, 22);
+        // this.fireball.link(1, 0, 1, 1000, 2000, 1, this.shapes.ball, this.materials.dragon, true, 10);
+        // this.fireball.link(1, 0, 1, 100, 200, 1, this.shapes.leg, this.materials.dragon, true);
+        // this.fireball.link(2, 0, 1, 100, 200, 1, this.shapes.leg, this.materials.dragon, true);
+        // this.fireball.link(3, 0, 1, 100, 200, 1, this.shapes.leg, this.materials.dragon, true);
+        // this.fireball.link(4, 0, 1, 100, 200, 1, this.shapes.leg, this.materials.dragon, true);
+
+        // this.fireball.setGround(50000, 500000)
+        this.fireball.setGround(50, 50)
+        this.fireball.setGravity(9.8)
+        this.fireball.setDragCoefficient(0.99);
+        this.fireball.setFrictionCoeff(0.99);
+        this.fireball.setIntegrationMethod("verlet", 0.001);
+
+        this.fireball.isRunning = false;
+        // this.fireball.isRunning = true;
+        this.fireball.t_sim = 0;
     }
     draw(caller, uniforms, target){
         // Set a target for the tail's tip (e.g., this could be animated over time)
@@ -183,9 +220,90 @@ export class FabrikDragon extends Dragon {
         this.dragonTail.update(1);  // Run several iterations to smooth out the IK solution
         // Update dragon mouth
         this.mouth.position = this.get_head_position();
+
+        // this.fireball.setParticle(0, 10, [this.mouth.position[0], this.mouth.position[1]+5, this.mouth.position[2],
+        //                                         0,0,0], 
+        //     this.shapes.leg, this.materials.dragon);
+        // this.fireball.setParticle(1, 10, [this.fireball.particles[1].position[0], 
+        //         this.fireball.particles[1].position[1], 
+        //         this.fireball.particles[1].position[2],
+        //         this.fireball.particles[1].velocity[0] / 2 ,
+        //         this.fireball.particles[1].velocity[1] / 2 ,
+        //         this.fireball.particles[1].velocity[2] / 2], 
+        //         this.shapes.leg, this.materials.dragon);
+        this.fireball.draw(caller, uniforms, this.shapes, this.materials);
         // In your draw routine, render the chain:
         this.dragonTail.display(caller, uniforms, this.shapes, this.materials);
+        
+        let currentHeadPosition = this.get_head_position();
+        let headVelocity = [0, 0, 0];
+
+        if (this.previousHeadPosition) {
+            let deltaTime = uniforms.animation_delta_time / 1000; // Convert to seconds
+
+            if (deltaTime > 0) {
+                headVelocity = [
+                    (currentHeadPosition[0] - this.previousHeadPosition[0]) / deltaTime,
+                    (currentHeadPosition[1] - this.previousHeadPosition[1]) / deltaTime,
+                    (currentHeadPosition[2] - this.previousHeadPosition[2]) / deltaTime,
+                ];
+            }
+        }
+
+        this.previousHeadPosition = currentHeadPosition; // Update for next frame
+
+        if (this.shooting) {
+            this.shootTimer += uniforms.animation_delta_time / 1000;
+
+            if (this.shootTimer >= this.shootInterval) {
+                this.shootParticle(headVelocity); // Pass headVelocity
+                this.shootTimer = 0;
+                this.shootCounter++;
+
+                if (this.shootCounter >= 20) {
+                    this.shooting = false;
+                    this.shootCounter = 0;
+                }
+            }
+        }
+
     }
+    shoot() {
+        this.mouth.position = this.get_head_position();
+        this.shooting = true;
+        this.shootTimer = 0;
+        this.shootCounter = 0;
+        this.fireball.isRunning = true;
+    }
+
+    shootParticle(headVelocity) {
+        let v = this.get_head_direction();
+        let y_angle = Math.PI / 9 * (Math.random() * 0.5 - 0.25);
+        let x_angle = Math.PI / 9 * (Math.random() * 0.5 - 0.25);
+        let mag = Math.random() * (30 - 20) + 20;
+
+        let rot_y = Mat4.rotation(y_angle, 0, 1, 0);
+        let rot_x = Mat4.rotation(x_angle, 1, 0, 0);
+        let rot = rot_x.times(rot_y);
+        let new_v = rot.times(v);
+        new_v = new_v.normalized().times(mag);
+
+        // Add dragon's head velocity to the particle's velocity
+        let particleVelocity = [
+            new_v[0] + headVelocity[0],
+            new_v[1] + headVelocity[1],
+            new_v[2] + headVelocity[2]
+        ];
+
+        this.fireball.setParticle(this.objectPoolIndex, 10, [this.mouth.position[0], this.mouth.position[1], this.mouth.position[2],
+            particleVelocity[0],
+            particleVelocity[1],
+            particleVelocity[2]],
+            this.shapes.square, this.materials.explosion, Math.random() * 2 + 2 , true, true);
+
+        this.objectPoolIndex = (this.objectPoolIndex + 1) % (this.objectPoolSize-1);
+    }
+
     breatheFire(fire_particles) {
         console.log(` breathes an fiery blast!`);
         let v = this.get_head_direction();
@@ -204,6 +322,8 @@ export class FabrikDragon extends Dragon {
             let new_v = rot.times(v);
 
             this.mouth.add_particles(0.1, 0.1, new_v.normalized().times(mag), fire_particles);
+
+            
         }
     }
     get_head_position() {

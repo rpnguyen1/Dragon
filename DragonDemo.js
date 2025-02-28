@@ -25,6 +25,8 @@ const DragonDemoBase = defs.DragonDemoBase =
 
         // constructor(): 
         this.hover = this.swarm = false;
+
+        this._debug_fire = false;
         
         
         //  ----- Set the Settings ----
@@ -46,6 +48,8 @@ const DragonDemoBase = defs.DragonDemoBase =
           'cylinder' : new defs.Cylindrical_Tube(), // these dragon models are temporary!!!!!
           'body' : new defs.Shape_From_File("assets/dragon_body.obj"), // these dragon models are temporary!!!!!
           'head' : new defs.Shape_From_File("assets/dragon.obj"),
+          'leg' : new defs.Shape_From_File("assets/dragon_leg.obj"),
+          'tail' : new defs.Shape_From_File("assets/dragon_tail.obj"),
           'teapot' : new defs.Shape_From_File("assets/teapot.obj"),
           'sky' : new defs.Shape_From_File("assets/sky_dome.obj"),
         };
@@ -290,7 +294,8 @@ export class DragonDemo extends DragonDemoBase
     // this.particleSystem.setParticle(0, 10, [point[0], point[1], point[2], 0, 0, 0]); // Dragon follows spline
     // this.particleSystem.draw(caller, this.uniforms, this.shapes, this.materials);
     // this.dragon1.draw(caller, this.uniforms, point);
-    this.dragon1.draw(caller, this.uniforms, fabrik_target);
+
+    // this.dragon1.draw(caller, this.uniforms, fabrik_target);
  
     // Fabrik Dragon test
     this.dragon2.draw(caller, this.uniforms, fabrik_target);
@@ -349,6 +354,9 @@ export class DragonDemo extends DragonDemoBase
         () => this.settings.FOV += this._debug_precision);
     this.key_triggered_button("Dec FOV", ["Shift", "N"],
         () => this.settings.FOV -= this._debug_precision);
+    this.new_line();
+    this.key_triggered_button("fire?", ["g"],
+        () => this.dragon2.shoot());
     this.new_line();
 
     // this.live_string(box => box.textContent = "light color: " + this.settings.LightColor);

@@ -174,9 +174,10 @@ export class Fabrik {
       if (i == this.segments.length - 2 ){
         shapes.head.draw(caller, uniforms, model_transform, materials.dragon);
 
-      } else{
+      } else if (i == 0 ){
+        shapes.tail.draw(caller, uniforms, model_transform, materials.dragon);
+      } else {
         shapes.body.draw(caller, uniforms, model_transform, materials.dragon);
-
       }
     }
   }
