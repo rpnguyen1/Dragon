@@ -47,6 +47,10 @@ export class Particle {
     }
 
     update_transform(){
+        if(this.radius < 3) {
+            this.radius += 0.02;
+            this.mass -= 0.02;
+        }
         this.particle_transform = Mat4.translation(this.position[0], this.position[1], this.position[2])
             .times(Mat4.scale(this.radius, this.radius, this.radius));
     }
