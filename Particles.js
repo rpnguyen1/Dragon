@@ -1,5 +1,7 @@
 import {tiny, defs} from './examples/common.js';
 
+import { VectorField } from './VectorField.js';
+
 // Pull these names into this module's scope for convenience:
 const { vec3, vec4, color, Mat4, Shape, Material, Shader, Texture, Component } = tiny;
 
@@ -10,6 +12,7 @@ export class ParticleProducer {
     // As dragon moves, this position moves along with it producing fire particles.
     constructor(position) {
         this.position = position;
+        this.field = new VectorField(position);
     }
 
     add_particles(mass, radius, velocity, fire_particles) {
@@ -47,10 +50,10 @@ export class Particle {
     }
 
     update_transform(){
-        if(this.radius < 3) {
-            this.radius += 0.02;
-            this.mass -= 0.02;
-        }
+        // if(this.radius < 3) {
+        //     this.radius += 0.02;
+        //     this.mass -= 0.02;
+        // }
         this.particle_transform = Mat4.translation(this.position[0], this.position[1], this.position[2])
             .times(Mat4.scale(this.radius, this.radius, this.radius));
     }

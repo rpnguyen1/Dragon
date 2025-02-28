@@ -7,6 +7,7 @@ import {SpringMass }from './simulation.js';
 import { Fabrik } from './fabrik.js'; // Forward And Backward Reaching Inverse Kinematics just for testing 
 import { SpringMassDragon, FabrikDragon } from './Dragon.js'; // Import dragon types???
 import { Particle } from './Particles.js';
+import { VectorField } from './VectorField.js';
 
 
 // Pull these names into this module's scope for convenience:
@@ -106,6 +107,8 @@ const DragonDemoBase = defs.DragonDemoBase =
 
         // World particles from fire
         this.fire_particles = [];
+        this.test_ball = new Particle(0.1, 0.25, vec3(-10, 10, 10), vec3(-1, 1, 1));
+        this.test_field = new VectorField(vec3(-10, 10, 10));
 
         this.d_t = 0.01
         this.start = false;
@@ -190,6 +193,9 @@ const DragonDemoBase = defs.DragonDemoBase =
         this.shapes.head.draw( caller, this.uniforms, Mat4.translation(20, 10, 30), this.materials.water);
 
         // this._debug_fps = caller.fps;
+
+        // draw axis arrows.
+        this.shapes.axis.draw(caller, this.uniforms, Mat4.identity(), this.materials.rgb);
       }
     }
 
@@ -251,6 +257,8 @@ export class DragonDemo extends DragonDemoBase
     let ball_transform2 = Mat4.translation(this.dragon2.mouth.position[0], this.dragon2.mouth.position[1] + 5, this.dragon2.mouth.position[2])
     .times(Mat4.scale(this.ball_radius, this.ball_radius, this.ball_radius));
     this.shapes.ball.draw( caller, this.uniforms, ball_transform2, { ...this.materials.metal, color: blue } );
+
+    this.shapes.ball.draw( caller, this.uniforms, this.test_ball.particle_transform, { ...this.materials.explosion, color: blue } );
     
     this.curve.draw(caller, this.uniforms);
 
@@ -260,7 +268,7 @@ export class DragonDemo extends DragonDemoBase
     
     // this.particleSystem.setParticle(0, 10, [point[0], point[1], point[2], 0, 0, 0]); // Dragon follows spline
     // this.particleSystem.draw(caller, this.uniforms, this.shapes, this.materials);
-    this.dragon1.draw(caller, this.uniforms, point);
+    // this.dragon1.draw(caller, this.uniforms, point);
  
     // Fabrik Dragon test
     this.dragon2.draw(caller, this.uniforms, fabrik_target);
@@ -280,7 +288,6 @@ export class DragonDemo extends DragonDemoBase
         this.shapes.ball.draw( caller, this.uniforms, p.particle_transform, { ...this.materials.metal, color: blue } );
       }
     }
-
   }
 
   integrate(p) {
@@ -294,6 +301,12 @@ export class DragonDemo extends DragonDemoBase
       this.integrate(p);
       p.update_transform();
     }
+
+    this.test_field.affect_particle(this.test_ball);
+    this.integrate(this.test_ball);
+    this.test_ball.update_transform();
+
+    // console.log(this.test_ball.velocity)
   }
 
   render_controls()
