@@ -205,10 +205,10 @@ const DragonDemoBase = defs.DragonDemoBase =
         const light_position = vec4(20, 20, 20, 1.0);
         const light_color = color(this.settings.LightColor[0], this.settings.LightColor[1], this.settings.LightColor[2], this.settings.LightColor[3])
         this.uniforms.lights = [ defs.Phong_Shader.light_source( light_position, light_color, 1000000 ) ];
-        this.shapes.ball.draw( caller, this.uniforms, Mat4.translation(20, 20, 20), this.materials.water);
+        // this.shapes.ball.draw( caller, this.uniforms, Mat4.translation(20, 20, 20), this.materials.water);
 
         this.uniforms.lights.push(defs.Phong_Shader.light_source( vec4(20 + Math.sin(t), 10+ Math.sin(t), 30+ Math.sin(t), 0.0), color( 0.1,1,1,1 ), 1000 ) )
-        this.shapes.head.draw( caller, this.uniforms, Mat4.translation(20, 10, 30), this.materials.water);
+        // this.shapes.head.draw( caller, this.uniforms, Mat4.translation(20, 10, 30), this.materials.water);
 
         // this._debug_fps = caller.fps;
       }
@@ -235,17 +235,17 @@ export class DragonDemo extends DragonDemoBase
     // Cube
 
     const sky_pos = Mat4.extractPositionFromMatrix(this.uniforms.camera_transform);
-    this.shapes.box.draw( caller, this.uniforms, Mat4.translation(0, 1, 0).times(Mat4.scale(1, 1, 1)), this.materials.Brick );
+    // this.shapes.box.draw( caller, this.uniforms, Mat4.translation(0, 1, 0).times(Mat4.scale(1, 1, 1)), this.materials.Brick );
     // this.shapes.box.draw( caller, this.uniforms, Mat4.translation(-3, 1, -3).times(Mat4.scale(50, 10, 1)), this.materials.gold );
     this.shapes.sky.draw( caller, this.uniforms, Mat4.translation(sky_pos[0], sky_pos[1], sky_pos[2]).times(Mat4.scale(1000, 1000, 1000)), this.materials.sky );
     // this.shapes.box.draw( caller, this.uniforms, Mat4.translation(-5, 50, -10).times(Mat4.scale(50, 100, 1)), this.materials.gold );
     // this.shapes.box.draw( caller, this.uniforms, Mat4.translation(-5, 50, 80).times(Mat4.scale(50, 100, 1)), this.materials.Brick );
     
-    
-    this.shapes.square.draw( caller, this.uniforms, Mat4.translation(6, 1, 0).times(Mat4.scale(1, 1, 1)), this.materials.explosion);
-    this.shapes.square.draw( caller, this.uniforms, Mat4.translation(8, 1, 3).times(Mat4.scale(1, 1, 1)), this.materials.fire);
-    this.shapes.square.draw( caller, this.uniforms, Mat4.translation(7, 1, 0.1).times(Mat4.scale(1, 1, 1)), this.materials.dust);
-    this.shapes.square.draw( caller, this.uniforms, Mat4.translation(10, 1, 0.1).times(Mat4.scale(1, 1, 1)), this.materials.smoke);
+    // texture testing
+    // this.shapes.square.draw( caller, this.uniforms, Mat4.translation(6, 1, 0).times(Mat4.scale(1, 1, 1)), this.materials.explosion);
+    // this.shapes.square.draw( caller, this.uniforms, Mat4.translation(8, 1, 3).times(Mat4.scale(1, 1, 1)), this.materials.fire);
+    // this.shapes.square.draw( caller, this.uniforms, Mat4.translation(7, 1, 0.1).times(Mat4.scale(1, 1, 1)), this.materials.dust);
+    // this.shapes.square.draw( caller, this.uniforms, Mat4.translation(10, 1, 0.1).times(Mat4.scale(1, 1, 1)), this.materials.smoke);
 
     if(!this.start) {
       let breathe_fire = (event) => {
@@ -279,7 +279,7 @@ export class DragonDemo extends DragonDemoBase
 
     let ball_transform2 = Mat4.translation(this.dragon2.mouth.position[0], this.dragon2.mouth.position[1] + 5, this.dragon2.mouth.position[2])
     .times(Mat4.scale(this.ball_radius, this.ball_radius, this.ball_radius));
-    this.shapes.ball.draw( caller, this.uniforms, ball_transform2, { ...this.materials.metal, color: yellow } );
+    // this.shapes.ball.draw( caller, this.uniforms, ball_transform2, { ...this.materials.metal, color: yellow } );
     
     this.curve.draw(caller, this.uniforms);
 
