@@ -124,12 +124,12 @@ export class Fabrik {
     const blue = color( 0,0,1,1 ), white = color( 1,1,1,1 );
 
     // Draw spheres at each segment's position.
-    for (let seg of this.segments) {
-      let pos = seg.position;
-      let model_transform = Mat4.translation(pos[0], pos[1], pos[2])
-                            .times(Mat4.scale(0.2, 0.2, 0.2));
-      shapes.ball.draw(caller, uniforms, model_transform, { ...materials.metal, color: white });    
-    }
+    // for (let seg of this.segments) {
+    //   let pos = seg.position;
+    //   let model_transform = Mat4.translation(pos[0], pos[1], pos[2])
+    //                         .times(Mat4.scale(0.2, 0.2, 0.2));
+    //   shapes.ball.draw(caller, uniforms, model_transform, { ...materials.metal, color: white });    
+    // }
 
     // Draw cylinders (lines) connecting adjacent segments.
     for (let i = 0; i < this.segments.length - 1; i++) {

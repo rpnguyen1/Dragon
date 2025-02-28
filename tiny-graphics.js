@@ -11,7 +11,8 @@ import {widgets} from './tiny-graphics-gui.js';
 export const tiny = {...math, ...widgets, math, widgets };
 
 // Pull these names into this module's scope for convenience:
-const {Vector3, vec3, color, Matrix, Mat4, Keyboard_Manager} = tiny;
+const {Vector, Vector3, vec3, color, Matrix, Mat4, Keyboard_Manager} = tiny;
+
 
 const Shape = tiny.Shape =
   class Shape {
@@ -157,6 +158,23 @@ const test_rookie_mistake = function () {
         copy_onto_graphics_card() -- you need a special call to it rather than calling new.`;
 };
 
+
+class SquareBuffer extends Shape {
+      // **Square** demonstrates two triangles that share vertices.  On any planar surface, the
+      // interior edges don't make any important seams.  In these cases there's no reason not
+      // to re-use data of the common vertices between triangles.  This makes all the vertex
+      // arrays (position, normals, etc) smaller and more cache friendly.
+      constructor () {
+          super ("position", "normal", "texture_coord");
+          // Specify the 4 square corner locations, and match those up with normal vectors:
+          this.arrays.position      = Vector3.cast ([-1, -1, 0], [1, -1, 0], [-1, 1, 0], [1, 1, 0]);
+          this.arrays.normal        = Vector3.cast ([0, 0, 1], [0, 0, 1], [0, 0, 1], [0, 0, 1]);
+          // Arrange the vertices into a square shape in texture space too:
+          this.arrays.texture_coord = Vector.cast ([0, 0], [1, 0], [0, 1], [1, 1]);
+          // Use two triangles this time, indexing into four distinct vertices:
+          this.indices.push (0, 1, 2, 1, 3, 2);
+      }
+  };
 
 const Shader = tiny.Shader =
   class Shader {
@@ -331,6 +349,13 @@ const Texture = tiny.Texture =
       }
   };
 
+const Material = tiny.Material =
+  class Material {
+      constructor(shader, properties = {}) {
+          this.shader = shader;
+          Object.assign(this, properties);
+      }
+  };
 
 const Component = tiny.Component =
   class Component {
@@ -369,6 +394,51 @@ const Component = tiny.Component =
             this.key_controls       = new Keyboard_Manager (document, callback_behavior);
             // Finally, run the user's code for setting up their scene:
             this.init ();
+
+            this.post_processing_quad = new SquareBuffer();
+
+            // this.default_post_processing_material;
+
+            // create a default post processing shader
+            this.default_post_processing_material = new Material(new class extends Shader {
+                vertex_glsl_code() {
+                    return `
+                        attribute vec3 position;
+                        attribute vec2 texture_coord;
+                        varying vec2 v_texture_coord;
+                        void main() {
+                            gl_Position = vec4(position, 1.0);
+                            v_texture_coord = texture_coord;
+                        }
+                    `;
+                }
+            
+                fragment_glsl_code() {
+                    return `
+                        precision mediump float;
+                        uniform sampler2D u_texture;
+                        varying vec2 v_texture_coord;
+            
+                        void main() {
+                            gl_FragColor = texture2D(u_texture, v_texture_coord);
+                        }
+                    `;
+                }
+            
+                update_GPU(context, gpu_addresses, uniforms) {
+                    context.uniform1i(gpu_addresses.u_texture, uniforms.texture);
+                }
+            }(), {texture: 0});
+
+            this.bloom_material = new Bloom_Material();
+            this.grayscale_material = new Grayscale_Material();
+            this.chromatic_aberration_material = new Chromatic_Aberration_Material();
+            this.blur_material = new Blur_Material();
+
+            this.use_blur = false;
+            this.use_grayscale = false;
+            this.use_bloom = false;
+            this.use_chromatic_aberration = false;
       }
       static types_used_before = new Set ();
       static initialize_CSS (classType, rules) {
@@ -407,7 +477,42 @@ const Component = tiny.Component =
             w.requestAnimationFrame || w.webkitRequestAnimationFrame
             || w.mozRequestAnimationFrame || w.oRequestAnimationFrame || w.msRequestAnimationFrame
             || function (callback) { w.setTimeout (callback, 1000 / 60); }) (window);
+            
+            // Framebuffer setup:
+            this.framebufferInfo = this.createFramebuffer(gl, this.canvas.width, this.canvas.height);
+
       }
+
+
+      createFramebuffer(gl, width, height) {
+        const framebuffer = gl.createFramebuffer();
+        gl.bindFramebuffer(gl.FRAMEBUFFER, framebuffer);
+
+        const colorTexture = gl.createTexture();
+        gl.bindTexture(gl.TEXTURE_2D, colorTexture);
+        gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, width, height, 0, gl.RGBA, gl.UNSIGNED_BYTE, null);
+        gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.LINEAR);
+        gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_S, gl.CLAMP_TO_EDGE);
+        gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_T, gl.CLAMP_TO_EDGE);
+        gl.framebufferTexture2D(gl.FRAMEBUFFER, gl.COLOR_ATTACHMENT0, gl.TEXTURE_2D, colorTexture, 0);
+
+        const depthBuffer = gl.createRenderbuffer();
+        gl.bindRenderbuffer(gl.RENDERBUFFER, depthBuffer);
+        gl.renderbufferStorage(gl.RENDERBUFFER, gl.DEPTH_COMPONENT16, width, height);
+        gl.framebufferRenderbuffer(gl.FRAMEBUFFER, gl.DEPTH_ATTACHMENT, gl.RENDERBUFFER, depthBuffer);
+
+        if (gl.checkFramebufferStatus(gl.FRAMEBUFFER) !== gl.FRAMEBUFFER_COMPLETE) {
+            console.error("Framebuffer is not complete!");
+            return null;
+        }
+
+        gl.bindTexture(gl.TEXTURE_2D, null);
+        gl.bindRenderbuffer(gl.RENDERBUFFER, null);
+        gl.bindFramebuffer(gl.FRAMEBUFFER, null);
+
+        return {framebuffer, colorTexture, depthBuffer};
+    }
+
       set_canvas_size (dimensions = [1080, 600]) { // Default is 1080 by 600
           // We must change size in CSS, wait for style re-flow, and then change size again within canvas attributes.
           // Both steps are needed; attributes on a canvas have a special effect on buffers, separate from their style.
@@ -439,20 +544,67 @@ const Component = tiny.Component =
                 // console.log('FPS:', this.fps);
             }
 
-          const gl = this.context;
-          if (gl)
-              gl.clear (gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT);        // Clear the canvas's pixels and z-buffer.
 
-          const open_list = [this];
-          while (open_list.length)                           // Traverse all Scenes and their children, recursively.
-          {
-              open_list.push (...open_list[ 0 ].animated_children);
-              // Call display() to draw each registered animation:
-              open_list.shift ().render_animation (this);
-          }
-          // Now that this frame is drawn, request that render() happen again as soon as all other web page events
-          // are processed:
-          this.event = window.requestAnimFrame (this.frame_advance.bind (this));
+            // Choose post process
+            let material = this.default_post_processing_material;
+            if(this.use_grayscale){
+                material = this.grayscale_material;
+            } else if(this.use_bloom){
+                material = this.bloom_material;
+            } else if(this.use_chromatic_aberration){
+                material = this.chromatic_aberration_material;
+            } else if(this.use_blur){
+                material = this.blur_material;
+            }
+
+          const gl = this.context;
+
+          if (gl) {
+            // Render to framebuffer:
+            gl.bindFramebuffer(gl.FRAMEBUFFER, this.framebufferInfo.framebuffer);
+            gl.viewport(0, 0, this.canvas.width, this.canvas.height);
+            gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT);
+
+            const open_list = [this];
+            while (open_list.length) {
+                open_list.push(...open_list[0].animated_children);
+                open_list.shift().render_animation(this);
+            }
+
+            // Render framebuffer texture to screen:
+            gl.bindFramebuffer(gl.FRAMEBUFFER, null);
+            gl.viewport(0, 0, this.canvas.width, this.canvas.height);
+            gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT);
+
+            gl.activeTexture(gl.TEXTURE0);
+            gl.bindTexture(gl.TEXTURE_2D, this.framebufferInfo.colorTexture);
+
+            if (material) {
+                material.texture = 0;
+                this.post_processing_quad.draw(this, {}, Mat4.identity(), material);
+            } else {
+                this.default_post_processing_material.texture = 0;
+                this.post_processing_quad.draw(this, {}, Mat4.identity(), this.default_post_processing_material);
+            }
+        }
+        this.event = window.requestAnimFrame(this.frame_advance.bind(this));
+    
+
+
+
+        //   if (gl)
+        //       gl.clear (gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT);        // Clear the canvas's pixels and z-buffer.
+
+        //   const open_list = [this];
+        //   while (open_list.length)                           // Traverse all Scenes and their children, recursively.
+        //   {
+        //       open_list.push (...open_list[ 0 ].animated_children);
+        //       // Call display() to draw each registered animation:
+        //       open_list.shift ().render_animation (this);
+        //   }
+        //   // Now that this frame is drawn, request that render() happen again as soon as all other web page events
+        //   // are processed:
+        //   this.event = window.requestAnimFrame (this.frame_advance.bind (this));
       }
       new_line (parent = this.control_panel) { parent.appendChild (document.createElement ("br")); }
       live_string (callback, parent = this.control_panel) {
@@ -547,4 +699,237 @@ const Component = tiny.Component =
       render_animation (context) {}                            // Called each frame for drawing.
       render_explanation () {}
       render_controls () {}     // render_controls(): Called by Controls_Widget for generating interactive UI.
+      
   };
+
+
+
+
+  const Bloom_Shader = tiny.Bloom_Shader =
+    class Bloom_Shader extends tiny.Shader {
+        vertex_glsl_code() {
+            return `
+                attribute vec3 position;
+                attribute vec2 texture_coord;
+                varying vec2 v_texture_coord;
+                void main() {
+                    gl_Position = vec4(position, 1.0);
+                    v_texture_coord = texture_coord;
+                }
+            `;
+        }
+
+        fragment_glsl_code() {
+            return `
+                precision mediump float;
+                uniform sampler2D u_texture;
+                varying vec2 v_texture_coord;
+                uniform float bloom_threshold;
+                uniform float bloom_intensity;
+        
+                void main() {
+                    // float bloom_intensity = 2.0
+                    float bloom_threshold = 0.2;
+                    float softness = 1.0;
+
+                    vec4 color = texture2D(u_texture, v_texture_coord);
+                    float brightness = max(color.r, max(color.g, color.b));
+                    float smooth_factor = smoothstep(bloom_threshold, bloom_threshold + softness, brightness);
+                    vec3 bright_color = color.rgb * smooth_factor;
+                    float blurValue = 0.04;
+                    vec3 blurred_color = texture2D(u_texture, v_texture_coord + vec2(blurValue, 0.0)).rgb * 0.25 +
+                                        texture2D(u_texture, v_texture_coord + vec2(-blurValue, 0.0)).rgb * 0.25 +
+                                        texture2D(u_texture, v_texture_coord + vec2(0.0, blurValue)).rgb * 0.25 +
+                                        texture2D(u_texture, v_texture_coord + vec2(0.0, -blurValue)).rgb * 0.25;
+                    blurred_color = bright_color * blurred_color;
+                    gl_FragColor = vec4(color.rgb + blurred_color * 2.0, color.w);
+                }
+            `;
+        }
+
+        update_GPU(context, gpu_addresses, uniforms) {
+            context.uniform1i(gpu_addresses.u_texture, uniforms.texture);
+            context.uniform1f(gpu_addresses.bloom_threshold, uniforms.bloom_threshold);
+            context.uniform1f(gpu_addresses.bloom_intensity, uniforms.bloom_intensity);
+        }
+    };
+
+    const Bloom_Material = tiny.Bloom_Material =
+    class Bloom_Material extends tiny.Material {
+        constructor() {
+            super(new Bloom_Shader(), {texture: 0, bloom_threshold: 0.0, bloom_intensity: 0.0});
+        }
+    };
+
+    const Chromatic_Aberration_Shader = tiny.Chromatic_Aberration_Shader =
+    class Chromatic_Aberration_Shader extends tiny.Shader {
+        vertex_glsl_code() {
+            return `
+                attribute vec3 position;
+                attribute vec2 texture_coord;
+                varying vec2 v_texture_coord;
+                void main() {
+                    gl_Position = vec4(position, 1.0);
+                    v_texture_coord = texture_coord;
+                }
+            `;
+        }
+
+        fragment_glsl_code() {
+            return `
+                precision mediump float;
+                uniform sampler2D u_texture;
+                varying vec2 v_texture_coord;
+                // uniform float aberration_amount;
+                // uniform float aberration_exponent; // Add an exponent uniform
+
+                void main() {
+                float aberration_amount = 0.01;
+                float aberration_exponent = 0.05;
+                    vec2 center = vec2(0.5, 0.5);
+                    float distance = distance(v_texture_coord, center);
+                    float exponential_distance = pow(distance, aberration_exponent); // Exponential distance
+
+                    vec2 offset = aberration_amount * (v_texture_coord - center) * exponential_distance * 2.0;
+
+                    // Separate and blur color channels
+                    float r = texture2D(u_texture, v_texture_coord + offset).r;
+                    float g = texture2D(u_texture, v_texture_coord).g;
+                    float b = texture2D(u_texture, v_texture_coord - offset).b;
+
+                    float blurvalue = 0.0004;
+
+                    // Apply a simple blur to each channel
+                    float blurred_r = (texture2D(u_texture, v_texture_coord + offset + vec2(blurvalue, 0.0)).r * 0.25 +
+                                    texture2D(u_texture, v_texture_coord + offset + vec2(-blurvalue, 0.0)).r * 0.25 +
+                                    texture2D(u_texture, v_texture_coord + offset + vec2(0.0, blurvalue)).r * 0.25 +
+                                    texture2D(u_texture, v_texture_coord + offset + vec2(0.0, -blurvalue)).r * 0.25);
+
+                    float blurred_g = (texture2D(u_texture, v_texture_coord + vec2(blurvalue, 0.0)).g * 0.25 +
+                                    texture2D(u_texture, v_texture_coord + vec2(-blurvalue, 0.0)).g * 0.25 +
+                                    texture2D(u_texture, v_texture_coord + vec2(0.0, blurvalue)).g * 0.25 +
+                                    texture2D(u_texture, v_texture_coord + vec2(0.0, -blurvalue)).g * 0.25);
+
+                    float blurred_b = (texture2D(u_texture, v_texture_coord - offset + vec2(blurvalue, 0.0)).b * 0.25 +
+                                    texture2D(u_texture, v_texture_coord - offset + vec2(-blurvalue, 0.0)).b * 0.25 +
+                                    texture2D(u_texture, v_texture_coord - offset + vec2(0.0, blurvalue)).b * 0.25 +
+                                    texture2D(u_texture, v_texture_coord - offset + vec2(0.0, -blurvalue)).b * 0.25);
+
+                    // Combine blurred channels
+                    gl_FragColor = vec4(blurred_r, blurred_g, blurred_b, 1.0);
+                }
+            `;
+        }
+
+        update_GPU(context, gpu_addresses, uniforms) {
+            context.uniform1i(gpu_addresses.u_texture, uniforms.texture);
+            context.uniform1f(gpu_addresses.aberration_amount, uniforms.aberration_amount);
+            context.uniform1f(gpu_addresses.aberration_exponent, uniforms.aberration_exponent); //Add aberration exponent
+        }
+    };
+
+const Chromatic_Aberration_Material = tiny.Chromatic_Aberration_Material =
+    class Chromatic_Aberration_Material extends tiny.Material {
+        constructor() {
+            super(new Chromatic_Aberration_Shader(), {texture: 0, aberration_amount: 0.01, aberration_exponent: 2.0}); // add aberration_exponent to constructor.
+        }
+    };
+
+
+const Grayscale_Shader = tiny.Grayscale_Shader =
+    class Grayscale_Shader extends tiny.Shader {
+        vertex_glsl_code() {
+            return `
+                attribute vec3 position;
+                attribute vec2 texture_coord;
+                varying vec2 v_texture_coord;
+                void main() {
+                  gl_Position = vec4(position, 1.0);
+                  v_texture_coord = texture_coord;
+                }
+            `;
+        }
+
+        fragment_glsl_code() {
+            return `
+                precision mediump float;
+                uniform sampler2D u_texture;
+                varying vec2 v_texture_coord;
+
+                void main() {
+                    vec4 color = texture2D(u_texture, v_texture_coord);
+                    float gray = dot(color.rgb, vec3(0.299, 0.587, 0.114));
+                    gl_FragColor = vec4(vec3(gray), color.a);
+                }
+            `;
+        }
+
+        update_GPU(context, gpu_addresses, uniforms) {
+            context.uniform1i(gpu_addresses.u_texture, uniforms.texture);
+        }
+    };
+
+const Grayscale_Material = tiny.Grayscale_Material =
+    class Grayscale_Material extends tiny.Material {
+        constructor() {
+            super(new Grayscale_Shader(), {texture: 0});
+        }
+    };
+
+
+
+const Blur_Shader = tiny.Blur_Shader =
+    class Blur_Shader extends tiny.Shader {
+        vertex_glsl_code() {
+            return `
+                attribute vec3 position;
+                attribute vec2 texture_coord;
+                varying vec2 v_texture_coord;
+                void main() {
+                    gl_Position = vec4(position, 1.0);
+                    v_texture_coord = texture_coord;
+                }
+            `;
+        }
+
+        fragment_glsl_code() {
+            return `
+                precision mediump float;
+                uniform sampler2D u_texture;
+                varying vec2 v_texture_coord;
+                uniform float bloom_threshold;
+                uniform float bloom_intensity;
+        
+                void main() {
+                    // float bloom_intensity = 2.0
+                    float bloom_threshold = 0.2;
+                    float softness = 1.0;
+
+                    vec4 color = texture2D(u_texture, v_texture_coord);
+                    // float brightness = max(color.r, max(color.g, color.b));
+                    // float smooth_factor = smoothstep(bloom_threshold, bloom_threshold + softness, brightness);
+                    // vec3 bright_color = color.rgb * smooth_factor;
+                    float blurValue = 0.004;
+                    vec3 blurred_color = texture2D(u_texture, v_texture_coord + vec2(blurValue, 0.0)).rgb * 0.25 +
+                                        texture2D(u_texture, v_texture_coord + vec2(-blurValue, 0.0)).rgb * 0.25 +
+                                        texture2D(u_texture, v_texture_coord + vec2(0.0, blurValue)).rgb * 0.25 +
+                                        texture2D(u_texture, v_texture_coord + vec2(0.0, -blurValue)).rgb * 0.25;
+
+                    // blurred_color = bright_color * blurred_color;
+                    gl_FragColor = vec4(blurred_color, color.w);
+                }
+            `;
+        }
+
+        update_GPU(context, gpu_addresses, uniforms) {
+            context.uniform1i(gpu_addresses.u_texture, uniforms.texture);
+        }
+    };
+
+
+const Blur_Material = tiny.Blur_Material =
+    class Blur_Material extends tiny.Material {
+        constructor() {
+            super(new Blur_Shader(), {texture: 0});
+        }
+    };
