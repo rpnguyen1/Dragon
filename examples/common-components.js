@@ -440,13 +440,35 @@ const Movement_Controls = defs.Movement_Controls =
 const Debug_Info = defs.Debug_Info =
 class Debug_Info extends Component {
     _debug_fps = 0;
+    con;
+    // use_bloom;
+    // use_chromatic_aberration;
+    // use_grayscale;
     render_controls() {
         // this.control_panel.innerHTML += "Stats<br>";
         // this.live_html("<h3>Debug Panel</h3>");
         this.live_string(box => box.textContent = "FPS: " + this._debug_fps);
+        this.new_line();
+        this.key_triggered_button("Bloom", [','],
+            () => this.con.use_bloom = !this.con.use_bloom );
+            this.new_line();
+
+        this.key_triggered_button("Chrom", [','],
+            () => this.con.use_chromatic_aberration = !this.con.use_chromatic_aberration );
+            this.new_line();
+        this.key_triggered_button("gray", [','],
+            () => this.con.use_grayscale = !this.con.use_grayscale );
+            this.new_line();
+        this.key_triggered_button("blur", [','],
+            () => this.con.use_blur = !this.con.use_blur );
+            this.new_line();
     }
 
     render_animation(context) {
+        this.con = context;
         this._debug_fps = context.fps;
+        // this.use_bloom = context.use_bloom;
+        // this.use_chromatic_aberration = context.use_chromatic_aberration;
+        // this.use_grayscale = context.use_grayscale;
     }
 };

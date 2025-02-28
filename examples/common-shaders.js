@@ -1269,20 +1269,20 @@ const Scroll_Fog_Shader = defs.Scroll_Fog_Shader =
         vec2 f_tex_2_distorted = f_tex_2 * tilingFactor;
         float distortion_intensity = 0.01;
 
-        vec2 f_tex_distort = vec2(f_tex_2_distorted.s - 0.05 * animation_time, f_tex_2_distorted.t - 0.04 * animation_time);
+        vec2 f_tex_distort = vec2(f_tex_2_distorted.s - 0.03 * animation_time, f_tex_2_distorted.t - 0.01 * animation_time);
         vec3 texColorDistort = texture2D(distort, f_tex_coord * f_tex_distort).rgb;
         vec2 distortion = (texColorDistort.rg - 0.5) * distortion_intensity ;
         
         vec2 f_tex_2_distorted2 = f_tex_2 * vec2(0.5, 0.5);
         float distortion_intensity2 = 0.1;
 
-        vec2 f_tex_distort2 = vec2(f_tex_2_distorted2.s - 0.01 * animation_time, f_tex_2_distorted2.t - 0.02 * animation_time);
+        vec2 f_tex_distort2 = vec2(f_tex_2_distorted2.s - 0.001 * animation_time, f_tex_2_distorted2.t - 0.002 * animation_time);
         vec3 texColorDistort2 = texture2D(distort, f_tex_coord * f_tex_distort2).rgb;
         vec2 distortion2 = (texColorDistort2.rg - 0.5) * distortion_intensity2 ;
 
-        vec2 maintilingFactor = vec2(1.3, 1.3);
+        vec2 maintilingFactor = vec2(1.0, 1.0);
         vec2 f_tex_2_tiled_main = f_tex_2 * maintilingFactor;
-        vec2 f_tex_3 = vec2(f_tex_2_tiled_main.s + 0.005 * sin(animation_time), f_tex_2_tiled_main.t - 0.02 * animation_time);
+        vec2 f_tex_3 = vec2(f_tex_2_tiled_main.s, f_tex_2_tiled_main.t - 0.02 * animation_time);
 
       
         vec4 tex_color = texture2D( texture, f_tex_3 + distortion + distortion2);       // Sample texture image in the correct place.
