@@ -108,8 +108,8 @@ const DragonDemoBase = defs.DragonDemoBase =
         // World particles from fire
         this.fire_particles = [];
         this.test_balls = [];
-        this.test_field = new VectorField(vec3(-10, 10, 10), vec3(-1, 0, 0));
-        this.test_field.init();
+        // this.test_field = new VectorField(vec3(-10, 10, 10), vec3(-1, 0, 0));
+        // this.test_field.init();
 
         // this.test_balls.push(new Particle(0.1, 0.5, vec3(-10, 10, 10), vec3(-1, 0, 0)));
         // this.test_balls.push(new Particle(0.1, 0.5, vec3(-10, 10.5, 10), vec3(-1, 0, 0)));
@@ -119,7 +119,8 @@ const DragonDemoBase = defs.DragonDemoBase =
         // this.test_balls.push(new Particle(0.1, 0.5, vec3(-10, 13, 10), vec3(-1, 0, 0)));
         
 
-        this.d_t = 0.01
+        this.d_t = 0.01 
+        this.particle_lifetime = 500;
         this.start = false;
       }
 
@@ -234,12 +235,26 @@ export class DragonDemo extends DragonDemoBase
     this.shapes.square.draw( caller, this.uniforms, Mat4.translation(7, 1, 0.1).times(Mat4.scale(1, 1, 1)), this.materials.dust);
 
     if(!this.start) {
+      // Breathe fire listener
       let breathe_fire = (event) => {
         if(event.key == "b") {
+          console.log(this.dragon2)
+          this.dragon2.create_vector_field();
           this.dragon2.breatheFire(this.fire_particles);
         }
       };
-      document.addEventListener('keydown', breathe_fire);    // Add listener
+
+      // We need to clear the vector field when done.
+      let onTimerFinish = () => {
+        this.dragon2.field = null;
+      }
+      let delete_field = (event) => {
+        if(event.key == "b") 
+          setTimeout(onTimerFinish, this.particle_lifetime);
+      }
+
+      document.addEventListener('keydown', breathe_fire);
+      document.addEventListener('keyup', delete_field);
       this.start = true;
     }
 
@@ -291,13 +306,8 @@ export class DragonDemo extends DragonDemoBase
     for(; t_sim<=t_next; t_sim += this.d_t) {
       this.update_particles();
       for(let p of this.fire_particles) {
-        // this.shapes.ball.draw( caller, this.uniforms, p.particle_transform, this.materials.explosion);
         this.shapes.ball.draw( caller, this.uniforms, p.particle_transform, { ...this.materials.metal, color: blue } );
       }
-
-      // for(let p of this.test_balls) {
-      //   this.shapes.ball.draw( caller, this.uniforms, p.particle_transform, { ...this.materials.plastic, color: blue } );
-      // }
     }
   }
 
@@ -309,19 +319,11 @@ export class DragonDemo extends DragonDemoBase
   update_particles(){
     // Integration
     for(let p of this.fire_particles) {
-      // this.integrate(p);
-      // p.update_transform();
-
-      this.test_field.affect_particle(p);
+      if(this.dragon2.field != null)
+        this.dragon2.field.affect_particle(p);
       this.integrate(p);
       p.update_transform();
     }
-
-    // for(let p of this.test_balls) {
-    //   this.test_field.affect_particle(p);
-    //   this.integrate(p);
-    //   p.update_transform();
-    // }
   }
 
   render_controls()

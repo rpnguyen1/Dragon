@@ -25,6 +25,7 @@ import {Hermit_spline, Curve_Shape }from './hermit.js';
 import {SpringMass }from './simulation.js';
 import { Fabrik } from './fabrik.js'; // Forward And Backward Reaching Inverse Kinematics just for testing 
 import { ParticleProducer } from './Particles.js';
+import { VectorField } from './VectorField.js';
 
 
 // Pull these names into this module's scope for convenience:
@@ -174,7 +175,7 @@ export class FabrikDragon extends Dragon {
     init(){
         this.dragonTail = new Fabrik(vec3(0, 10, 0), 20, 3);
         let head_dir = this.get_head_direction().normalized();
-        this.mouth = new ParticleProducer(this.get_head_position().plus(head_dir));
+        this.mouth = new ParticleProducer(this.get_head_position().plus(head_dir), head_dir);
     }
     draw(caller, uniforms, target){
         // Set a target for the tail's tip (e.g., this could be animated over time)
@@ -185,6 +186,11 @@ export class FabrikDragon extends Dragon {
         this.mouth.position = this.get_head_position();
         // In your draw routine, render the chain:
         this.dragonTail.display(caller, uniforms, this.shapes, this.materials);
+    }
+    create_vector_field() {
+        this.field = new VectorField(this.get_head_position(), this.get_head_direction());
+        this.field.init();
+        console.log(this.field)
     }
     breatheFire(fire_particles) {
         console.log(` breathes an fiery blast!`);

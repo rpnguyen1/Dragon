@@ -11,7 +11,7 @@ const { vec3, vec4, color, Mat4, Shape, Material, Shader, Texture, Component } =
 export class VectorField {
     constructor(source_position, dir) {
         this.field_rows = 9;
-        this.field_cols = 20
+        this.field_cols = 40
 
         // Where the + exponential part starts
         this.pexp_field = 0;

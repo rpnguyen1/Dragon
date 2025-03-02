@@ -12,10 +12,10 @@ export class ParticleProducer {
     // As dragon moves, this position moves along with it producing fire particles.
     constructor(position) {
         this.position = position;
-        this.field = new VectorField(position);
     }
 
     add_particles(mass, radius, velocity, fire_particles) {
+        let random_y = Math.random() * 6 - 3;
         let particle = new Particle(mass, radius, this.position, velocity);
         fire_particles.push(particle);
     }
