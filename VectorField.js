@@ -11,8 +11,16 @@ const { vec3, vec4, color, Mat4, Shape, Material, Shader, Texture, Component } =
 export class VectorField {
     constructor(source_position, dir) {
         this.field_rows = 9;
-        this.mid_field = 4;
         this.field_cols = 20
+
+        // Where the + exponential part starts
+        this.pexp_field = 0;
+        // Where the straight field starts
+        this.straight_field = 4;
+        // Middle field line
+        this.mid_field = 4;
+        // Where the - exponential part starts
+        this.nexp_field = 5;
 
         this.source_position = source_position;
         this.dir = dir;
@@ -24,31 +32,33 @@ export class VectorField {
 
     init() {
         // Modeling forces
-        let func1 = (x) => 0.2 * Math.exp(0.2 * x);
-        let func2 = (x) => 0.4 * Math.exp(0.2 * x);
-        let func3 = (x) => 0.8 * Math.exp(0.2 * x);
+
+        // Append funcs to be represented in the velocity field
+        let funcs = [];
+        // Making the functions for the top part of the field
+        for(let i = this.straight_field - 1; i >= 0; i--) {
+            let func = (x) => (0.1 * (2 ** i)) * Math.exp((0.2 * (2 ** i)) * x);
+            funcs.push(func);
+        }
+        // Making the functions for the mid part of the field
+        for(let i = this.straight_field; i < this.nexp_field; i++) {
+            let func = (x) => 0;
+            funcs.push(func);
+        }
+        // Making the functions for the bot part of the field
+        for(let i = 0; i < this.straight_field; i++) {
+            let func = (x) => -((0.1 * (2 ** i)) * Math.exp(0.2 * x));
+            funcs.push(func);
+        }
 
         // Top three gradual exponential
-        for(let i = 0; i<this.field_cols; i++) {
-            this.field[0][i] = vec3(1, func3(i), 0);
-            this.field[1][i] = vec3(1, func2(i), 0);
-            this.field[2][i] = vec3(1, func1(i), 0);
-        }
-
-        // Middle two, continue forward
-        // Already vec3(0, 0, 0);
-
-        // Bottom three gradual negative exponential
-        for(let i = 0; i<this.field_cols; i++) {
-            this.field[6][i] = vec3(1, -func1(i * this.x_width), 0);
-            this.field[7][i] = vec3(1, -func2(i * this.x_width), 0);
-            this.field[8][i] = vec3(1, -func3(i * this.x_width), 0);
-        }
-
         for(let i = 0; i<this.field_rows; i++) {
-            for(let j = 0; j<this.field_cols; j++) this.field[i][j] = this.field[i][j].times(5);
+            for(let j = 0; j<this.field_cols; j++) {
+                this.field[i][j] = vec3(1, funcs[i](j * this.x_width), 0);
+            }
         }
 
+        // Used for rotating vector field around.
         let y_axis = vec3(0, 1, 0);
         let vel_proj_xz = this.dir.minus(y_axis.times(this.dir.dot(y_axis)));
         let perp = y_axis.cross(vel_proj_xz);
@@ -90,20 +100,23 @@ export class VectorField {
         }
     }
 
+    // Spews fires farther out
+    // More concentrated in middle.
+
     affect_particle(p) {
         let idxs = this.get_vector_index(p);
         if (idxs != -1) {
             let r = idxs[0];
             let c = idxs[1];
 
-            let vel = this.field[r][c];
-            let new_vel = this.rot.times(vec4(vel[0], vel[1], vel[2], 1));
+            let force = this.field[r][c];
+            let new_force = this.rot.times(vec4(force[0], force[1], force[2], 1));
 
-            p.velocity = new_vel
+            p.net_force = new_force;
 
-            console.log("ROW: ", r, " COL: ", c);
-            console.log("POSITION: ", p.position);
-            console.log("NEW VELOCITY: ", vel);
+            // console.log("ROW: ", r, " COL: ", c);
+            // console.log("POSITION: ", p.position);
+            // console.log("NEW FORCE: ", force);
         }
     }
 

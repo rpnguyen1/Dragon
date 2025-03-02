@@ -108,15 +108,15 @@ const DragonDemoBase = defs.DragonDemoBase =
         // World particles from fire
         this.fire_particles = [];
         this.test_balls = [];
-        this.test_field = new VectorField(vec3(-1, 1, 1), vec3(-1, 0, 0));
+        this.test_field = new VectorField(vec3(-10, 10, 10), vec3(-1, 0, 0));
         this.test_field.init();
 
-        this.test_balls.push(new Particle(0.1, 0.5, vec3(-1, 1, 1), vec3(-1, 0, 0)));
-        this.test_balls.push(new Particle(0.1, 0.5, vec3(-1, 1.5, 1), vec3(-1, 0, 0)));
-        this.test_balls.push(new Particle(0.1, 0.5, vec3(-1, 1.7, 1), vec3(-1, 0, 0)));
-        this.test_balls.push(new Particle(0.1, 0.5, vec3(-1, 2, 1), vec3(-1, 0, 0)));
-        this.test_balls.push(new Particle(0.1, 0.5, vec3(-1, 2.5, 1), vec3(-1, 0, 0)));
-        this.test_balls.push(new Particle(0.1, 0.5, vec3(-1, 3, 1), vec3(-1, 0, 0)));
+        // this.test_balls.push(new Particle(0.1, 0.5, vec3(-10, 10, 10), vec3(-1, 0, 0)));
+        // this.test_balls.push(new Particle(0.1, 0.5, vec3(-10, 10.5, 10), vec3(-1, 0, 0)));
+        // this.test_balls.push(new Particle(0.1, 0.5, vec3(-10, 10.7, 10), vec3(-1, 0, 0)));
+        // this.test_balls.push(new Particle(0.1, 0.5, vec3(-10, 11, 10), vec3(-1, 0, 0)));
+        // this.test_balls.push(new Particle(0.1, 0.5, vec3(-10, 12, 10), vec3(-1, 0, 0)));
+        // this.test_balls.push(new Particle(0.1, 0.5, vec3(-10, 13, 10), vec3(-1, 0, 0)));
         
 
         this.d_t = 0.01
