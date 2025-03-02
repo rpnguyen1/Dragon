@@ -57,4 +57,8 @@ export class Particle {
         this.particle_transform = Mat4.translation(this.position[0], this.position[1], this.position[2])
             .times(Mat4.scale(this.radius, this.radius, this.radius));
     }
+
+    get_angle_between_vectors(a, b) {
+        return Math.acos(a.dot(b) / (a.norm() * b.norm()));
+    }
 }
