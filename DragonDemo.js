@@ -148,7 +148,7 @@ const DragonDemoBase = defs.DragonDemoBase =
         
 
         this.d_t = 0.01 
-        this.particle_lifetime = 0.5; // In seconds.
+        this.particle_lifetime = 0.7; // In seconds.
         this.start = false;
       }
 
@@ -249,6 +249,9 @@ export class DragonDemo extends DragonDemoBase
     super.render_animation( caller );
 
     const blue = color( 0,0,1,1 ), yellow = color( 1,0.7,0,1 ), red = color(1, 0, 0, 1);
+    const fire_orange = color(1, 0.25098039215, 0, 1);
+    const smokey = color(0.23137254902, 0.23137254902, 0.21960784313, 1);
+    let color_dir = smokey.minus(fire_orange);
 
     const t = this.t = this.uniforms.animation_time/1000.0;
     this.uniforms.projection_transform = Mat4.perspective( this.settings.FOV * Math.PI/180, caller.width/caller.height, 1, 1000 );
@@ -352,7 +355,12 @@ export class DragonDemo extends DragonDemoBase
     for(; t_sim<=t_next; t_sim += this.d_t) {
       this.update_particles();
       for(let p of this.fire_particles) {
-        this.shapes.ball.draw( caller, this.uniforms, p.particle_transform, { ...this.materials.metal, color: red } );
+        let c = null;
+        if(p.color[1] != 0) {
+          c = fire_orange.plus(color_dir.times(1 / this.particle_lifetime * (this.t - p.creation_t)));
+        }
+        else c = red;
+        this.shapes.ball.draw( caller, this.uniforms, p.particle_transform, { ...this.materials.metal, color: c } );
         // this.shapes.ball.draw( caller, this.uniforms, p.particle_transform, { ...this.materials.metal, color: blue } );
       }
     }

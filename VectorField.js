@@ -26,8 +26,8 @@ export class VectorField {
         this.dir = dir;
         this.field = new Array(this.field_rows).fill(null).map(() => new Array(this.field_cols).fill(vec3(1, 0, 0)));
 
-        this.x_width = 0.5;
-        this.y_width = 0.5;
+        this.x_width = 0.15;
+        this.y_width = 0.15;
     }
 
     init() {
@@ -37,19 +37,19 @@ export class VectorField {
         let funcs = [];
         // Making the functions for the top part of the field
         for(let i = this.straight_field - 1; i >= 0; i--) {
-            let func = (x) => (0.2 * (2 ** i)) * Math.exp((0.2 * (2 ** i)) * x) * 2;
+            let func = (x) => (0.2 * (2 ** i)) * Math.exp((0.2 * (2 ** i)) * x);
             funcs.push(func);
         }
         // Making the functions for the mid part of the field
         for(let i = this.straight_field; i < this.nexp_field; i++) {
-            let func_1 = (x) => (0.1) * Math.exp((0.1) * x) * 2;
-            let func_2 = (x) => -((0.1) * Math.exp((0.1) * x)) * 2;
+            let func_1 = (x) => (0.1) * Math.exp((0.1) * x);
+            let func_2 = (x) => -((0.1) * Math.exp((0.1) * x));
             if(Math.random() < 0.5) funcs.push(func_1);
             else funcs.push(func_2);
         }
         // Making the functions for the bot part of the field
         for(let i = 0; i < this.straight_field; i++) {
-            let func = (x) => -((0.2 * (2 ** i)) * Math.exp((0.2 * (2 ** i)) * x)) * 2;
+            let func = (x) => -((0.2 * (2 ** i)) * Math.exp((0.2 * (2 ** i)) * x));
             funcs.push(func);
         }
 
@@ -127,6 +127,10 @@ export class VectorField {
             let new_force = this.rot.times(vec4(force[0], force[1], force[2], 1));
 
             p.net_force = new_force;
+
+            if(r < this.straight_field) p.color = color(1, 0.25098039215, 0, 1)
+            else if (r == this.straight_field) p.color = color(1, 0, 0, 1)
+            else p.color = color(1, 0.25098039215, 0, 1)
 
             // console.log("ROW: ", r, " COL: ", c);
             // console.log("POSITION: ", p.position);

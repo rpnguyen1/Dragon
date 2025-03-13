@@ -197,13 +197,13 @@ export class FabrikDragon extends Dragon {
         console.log(t)
         let v = this.get_head_direction();
         
-        for(let i = 0; i<20; i++) {
+        for(let i = 0; i<10; i++) {
             // We're gonna spit fire in a cone shape. The mouth is the pointy end.
-            let y_angle = Math.PI / 13 * (Math.random() * 2 - 1); // Rotate about y
-            let x_angle = Math.PI / 13 * (Math.random() * 2 - 1); // Rotate about x
+            let y_angle = Math.PI / 11 * (Math.random() * 2 - 1); // Rotate about y
+            let x_angle = Math.PI / 11 * (Math.random() * 2 - 1); // Rotate about x
 
             // Randomize how fast we shoot particle
-            let mag = Math.random() * (30 - 20) + 20;
+            let mag = Math.random() * (30 - 15) + 15;
 
             let rot_y = Mat4.rotation(y_angle, 0, 1, 0);
             let rot_x = Mat4.rotation(x_angle, 1, 0, 0);
