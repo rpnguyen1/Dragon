@@ -192,14 +192,15 @@ export class FabrikDragon extends Dragon {
         this.field.init();
         console.log(this.field)
     }
-    breatheFire(fire_particles) {
+    breatheFire(fire_particles, t) {
         console.log(` breathes an fiery blast!`);
+        console.log(t)
         let v = this.get_head_direction();
         
-        for(let i = 0; i<10; i++) {
+        for(let i = 0; i<20; i++) {
             // We're gonna spit fire in a cone shape. The mouth is the pointy end.
-            let y_angle = Math.PI / 9 * (Math.random() * 2 - 1); // Rotate about y
-            let x_angle = Math.PI / 9 * (Math.random() * 2 - 1); // Rotate about x
+            let y_angle = Math.PI / 13 * (Math.random() * 2 - 1); // Rotate about y
+            let x_angle = Math.PI / 13 * (Math.random() * 2 - 1); // Rotate about x
 
             // Randomize how fast we shoot particle
             let mag = Math.random() * (30 - 20) + 20;
@@ -209,7 +210,9 @@ export class FabrikDragon extends Dragon {
             let rot = rot_x.times(rot_y);
             let new_v = rot.times(v);
 
-            this.mouth.add_particles(0.1, 0.1, new_v.normalized().times(mag), fire_particles);
+            // Is there a way to find the rotation angles of the head?
+
+            this.mouth.add_particles(0.1, 0.1, new_v.normalized().times(mag), fire_particles, t);
         }
     }
     get_head_position() {

@@ -14,9 +14,11 @@ export class ParticleProducer {
         this.position = position;
     }
 
-    add_particles(mass, radius, velocity, fire_particles) {
+    add_particles(mass, radius, velocity, fire_particles, t) {
         let random_y = Math.random() * 6 - 3;
-        let particle = new Particle(mass, radius, this.position, velocity);
+        let particle = new Particle(mass, radius, this.position, velocity, t);
+        console.log(particle.creation_t)
+        // if (fire_particles.length < 500)
         fire_particles.push(particle);
     }
 
@@ -26,7 +28,7 @@ export class ParticleProducer {
 }
 
 export class Particle {
-    constructor(mass, radius, position, velocity){
+    constructor(mass, radius, position, velocity, t){
         this.mass = mass;
         this.position = vec3(position[0], position[1], position[2]);
         this.velocity = velocity;
@@ -35,6 +37,8 @@ export class Particle {
         this.radius = radius;
         this.particle_transform = Mat4.translation(this.position[0], this.position[1], this.position[2])
             .times(Mat4.scale(this.radius, this.radius, this.radius));
+
+        this.creation_t = t;
     }
 
     set_mass(mass) {
@@ -50,10 +54,10 @@ export class Particle {
     }
 
     update_transform(){
-        // if(this.radius < 3) {
-        //     this.radius += 0.02;
-        //     this.mass -= 0.02;
-        // }
+        if(this.radius < 3) {
+            this.radius += 0.0001;
+            this.mass -= 0.001;
+        }
         this.particle_transform = Mat4.translation(this.position[0], this.position[1], this.position[2])
             .times(Mat4.scale(this.radius, this.radius, this.radius));
     }

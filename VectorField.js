@@ -11,7 +11,7 @@ const { vec3, vec4, color, Mat4, Shape, Material, Shader, Texture, Component } =
 export class VectorField {
     constructor(source_position, dir) {
         this.field_rows = 9;
-        this.field_cols = 40
+        this.field_cols = 10;
 
         // Where the + exponential part starts
         this.pexp_field = 0;
@@ -37,21 +37,22 @@ export class VectorField {
         let funcs = [];
         // Making the functions for the top part of the field
         for(let i = this.straight_field - 1; i >= 0; i--) {
-            let func = (x) => (0.1 * (2 ** i)) * Math.exp((0.2 * (2 ** i)) * x);
+            let func = (x) => (0.2 * (2 ** i)) * Math.exp((0.2 * (2 ** i)) * x) * 2;
             funcs.push(func);
         }
         // Making the functions for the mid part of the field
         for(let i = this.straight_field; i < this.nexp_field; i++) {
-            let func = (x) => 0;
-            funcs.push(func);
+            let func_1 = (x) => (0.1) * Math.exp((0.1) * x) * 2;
+            let func_2 = (x) => -((0.1) * Math.exp((0.1) * x)) * 2;
+            if(Math.random() < 0.5) funcs.push(func_1);
+            else funcs.push(func_2);
         }
         // Making the functions for the bot part of the field
         for(let i = 0; i < this.straight_field; i++) {
-            let func = (x) => -((0.1 * (2 ** i)) * Math.exp(0.2 * x));
+            let func = (x) => -((0.2 * (2 ** i)) * Math.exp((0.2 * (2 ** i)) * x)) * 2;
             funcs.push(func);
         }
 
-        // Top three gradual exponential
         for(let i = 0; i<this.field_rows; i++) {
             for(let j = 0; j<this.field_cols; j++) {
                 this.field[i][j] = vec3(1, funcs[i](j * this.x_width), 0);
@@ -60,16 +61,30 @@ export class VectorField {
 
         // Used for rotating vector field around.
         let y_axis = vec3(0, 1, 0);
+        let x_axis = vec3(1, 0, 0);
+        console.log(this.dir)
         let vel_proj_xz = this.dir.minus(y_axis.times(this.dir.dot(y_axis)));
+        console.log(vel_proj_xz)
         let perp = y_axis.cross(vel_proj_xz);
-        this.theta1 = -this.get_angle_between_vectors(this.dir, vel_proj_xz);
-        this.theta2 = -this.get_angle_between_vectors(vec3(1, 0, 0), vel_proj_xz);
+        console.log(perp)
+        // How we get from VF dir to its Projection
+        this.theta1 = this.get_angle_between_vectors(this.dir, vel_proj_xz);
+        if (this.dir.cross(vel_proj_xz)[1] < 0) this.theta1 = -this.theta1;
+        console.log(this.theta1 * 180 / Math.PI)
+        // How we get from the x-axis to the projection
+        this.theta2 = this.get_angle_between_vectors(x_axis, vel_proj_xz);
+        if (x_axis.cross(vel_proj_xz)[1] < 0) this.theta2 = -this.theta2;
+        console.log(this.theta2 * 180 / Math.PI)
 
         if(perp[1] < 0) perp = perp.times(-1);
 
         this.rot1 = Mat4.rotation(this.theta2, 0, 1, 0);
-        this.rot2 = Mat4.rotation(this.theta1, perp[0], perp[1], perp[2]);
+        this.rot2 = Mat4.rotation(-this.theta1, perp[0], perp[1], perp[2]);
         this.rot = this.rot2.times(this.rot1)
+
+        this.rot1_to_x = Mat4.rotation(this.theta1, perp[0], perp[1], perp[2]);
+        this.rot2_to_x = Mat4.rotation(-this.theta2, 0, 1, 0);
+        this.rot_to_x = this.rot2_to_x.times(this.rot1_to_x)
 
         console.log(this.field)
     }
@@ -80,8 +95,7 @@ export class VectorField {
         let y = p.position[1] - this.source_position[1];
         let z = p.position[2] - this.source_position[2];
 
-        let rot = Mat4.rotation(-this.theta2, 0, 1, 0);
-        let new_pos = rot.times(vec4(x, y, z, 1));
+        let new_pos = this.rot_to_x.times(vec4(x, y, z, 1));
 
         // console.log("ROTATED POS: ", new_pos)
 

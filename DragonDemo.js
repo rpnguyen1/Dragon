@@ -106,21 +106,29 @@ const DragonDemoBase = defs.DragonDemoBase =
         this.dragon2 = new FabrikDragon(this.shapes, this.materials);
 
         // World particles from fire
-        this.fire_particles = [];
-        this.test_balls = [];
-        // this.test_field = new VectorField(vec3(-10, 10, 10), vec3(-1, 0, 0));
+        this.max_num_particles = 500;
+        // this.fire_particles = Array(this.max_num_particles);
+        this.fire_particles = []
+        
+
+        // this.test_balls = [];
+        // this.test_field = new VectorField(vec3(-1, 5, 1), vec3(-1, 0, 0));
         // this.test_field.init();
 
-        // this.test_balls.push(new Particle(0.1, 0.5, vec3(-10, 10, 10), vec3(-1, 0, 0)));
-        // this.test_balls.push(new Particle(0.1, 0.5, vec3(-10, 10.5, 10), vec3(-1, 0, 0)));
-        // this.test_balls.push(new Particle(0.1, 0.5, vec3(-10, 10.7, 10), vec3(-1, 0, 0)));
-        // this.test_balls.push(new Particle(0.1, 0.5, vec3(-10, 11, 10), vec3(-1, 0, 0)));
-        // this.test_balls.push(new Particle(0.1, 0.5, vec3(-10, 12, 10), vec3(-1, 0, 0)));
-        // this.test_balls.push(new Particle(0.1, 0.5, vec3(-10, 13, 10), vec3(-1, 0, 0)));
+        // this.test_balls.push(new Particle(0.1, 0.5, vec3(-1, 3, 1), vec3(-1, 0, 0)));
+        // this.test_balls.push(new Particle(0.1, 0.5, vec3(-1, 3.5, 1), vec3(-1, 0, 0)));
+        // this.test_balls.push(new Particle(0.1, 0.5, vec3(-1, 3.7, 1), vec3(-1, 0, 0)));
+        // this.test_balls.push(new Particle(0.1, 0.5, vec3(-1, 4, 1), vec3(-1, 0, 0)));
+        // this.test_balls.push(new Particle(0.1, 0.5, vec3(-1, 5, 1), vec3(-1, 0, 0)));
+        // this.test_balls.push(new Particle(0.1, 0.5, vec3(-1, 6, 1), vec3(-1, 0, 0)));
+
+        // this.test_balls.push(new Particle(0.1, 0.5, vec3(-1, 4, 1), vec3(-1, 0, 0)));
+        // this.test_balls.push(new Particle(0.1, 0.5, vec3(-1, 5, 1), vec3(-1, 0, 0)));
+        // this.test_balls.push(new Particle(0.1, 0.5, vec3(-1, 6, 1), vec3(-1, 0, 0)));
         
 
         this.d_t = 0.01 
-        this.particle_lifetime = 500;
+        this.particle_lifetime = 0.5; // In seconds.
         this.start = false;
       }
 
@@ -219,9 +227,9 @@ export class DragonDemo extends DragonDemoBase
     // Call the setup code that we left inside the base class:
     super.render_animation( caller );
 
-    const blue = color( 0,0,1,1 ), yellow = color( 1,0.7,0,1 );
+    const blue = color( 0,0,1,1 ), yellow = color( 1,0.7,0,1 ), red = color(1, 0, 0, 1);
 
-    const t = this.t = this.uniforms.animation_time/1000;
+    const t = this.t = this.uniforms.animation_time/1000.0;
     this.uniforms.projection_transform = Mat4.perspective( this.settings.FOV * Math.PI/180, caller.width/caller.height, 1, 1000 );
 
     // !!! Draw ground
@@ -240,7 +248,7 @@ export class DragonDemo extends DragonDemoBase
         if(event.key == "b") {
           console.log(this.dragon2)
           this.dragon2.create_vector_field();
-          this.dragon2.breatheFire(this.fire_particles);
+          this.dragon2.breatheFire(this.fire_particles, this.t);
         }
       };
 
@@ -291,6 +299,13 @@ export class DragonDemo extends DragonDemoBase
     // this.particleSystem.setParticle(0, 10, [point[0], point[1], point[2], 0, 0, 0]); // Dragon follows spline
     // this.particleSystem.draw(caller, this.uniforms, this.shapes, this.materials);
     // this.dragon1.draw(caller, this.uniforms, point);
+
+    // Pool and cull out dead particles
+    let new_particles = Array();
+    for(let p of this.fire_particles) {
+      if(t - p.creation_t < this.particle_lifetime) new_particles.push(p);
+    }
+    this.fire_particles = new_particles
  
     // Fabrik Dragon test
     this.dragon2.draw(caller, this.uniforms, fabrik_target);
@@ -306,7 +321,8 @@ export class DragonDemo extends DragonDemoBase
     for(; t_sim<=t_next; t_sim += this.d_t) {
       this.update_particles();
       for(let p of this.fire_particles) {
-        this.shapes.ball.draw( caller, this.uniforms, p.particle_transform, { ...this.materials.metal, color: blue } );
+        this.shapes.ball.draw( caller, this.uniforms, p.particle_transform, { ...this.materials.metal, color: red } );
+        // this.shapes.ball.draw( caller, this.uniforms, p.particle_transform, { ...this.materials.metal, color: blue } );
       }
     }
   }
@@ -324,6 +340,13 @@ export class DragonDemo extends DragonDemoBase
       this.integrate(p);
       p.update_transform();
     }
+
+    // for(let p of this.test_balls) {
+    //   this.test_field.affect_particle(p);
+    //   this.integrate(p);
+    //   p.update_transform();
+    // }
+
   }
 
   render_controls()
