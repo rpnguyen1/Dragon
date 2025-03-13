@@ -25,6 +25,7 @@ import {Hermit_spline, Curve_Shape }from './hermit.js';
 import {SpringMass }from './simulation.js';
 import { Fabrik } from './fabrik.js'; // Forward And Backward Reaching Inverse Kinematics just for testing 
 import { ParticleProducer } from './Particles.js';
+import { VectorField } from './VectorField.js';
 
 
 // Pull these names into this module's scope for convenience:
@@ -174,7 +175,7 @@ export class FabrikDragon extends Dragon {
     init(){
         this.dragonTail = new Fabrik(vec3(0, 10, 0), 20, 3);
         let head_dir = this.get_head_direction().normalized();
-        this.mouth = new ParticleProducer(this.get_head_position().plus(head_dir));
+        this.mouth = new ParticleProducer(this.get_head_position().plus(head_dir), head_dir);
     }
     draw(caller, uniforms, target){
         // Set a target for the tail's tip (e.g., this could be animated over time)
@@ -186,14 +187,20 @@ export class FabrikDragon extends Dragon {
         // In your draw routine, render the chain:
         this.dragonTail.display(caller, uniforms, this.shapes, this.materials);
     }
-    breatheFire(fire_particles) {
+    create_vector_field() {
+        this.field = new VectorField(this.get_head_position(), this.get_head_direction());
+        this.field.init();
+        console.log(this.field)
+    }
+    breatheFire(fire_particles, t) {
         console.log(` breathes an fiery blast!`);
+        console.log(t)
         let v = this.get_head_direction();
         
-        for(let i = 0; i<10; i++) {
+        for(let i = 0; i<20; i++) {
             // We're gonna spit fire in a cone shape. The mouth is the pointy end.
-            let y_angle = Math.PI / 9 * (Math.random() * 2 - 1); // Rotate about y
-            let x_angle = Math.PI / 9 * (Math.random() * 2 - 1); // Rotate about x
+            let y_angle = Math.PI / 13 * (Math.random() * 2 - 1); // Rotate about y
+            let x_angle = Math.PI / 13 * (Math.random() * 2 - 1); // Rotate about x
 
             // Randomize how fast we shoot particle
             let mag = Math.random() * (30 - 20) + 20;
@@ -203,7 +210,9 @@ export class FabrikDragon extends Dragon {
             let rot = rot_x.times(rot_y);
             let new_v = rot.times(v);
 
-            this.mouth.add_particles(0.1, 0.1, new_v.normalized().times(mag), fire_particles);
+            // Is there a way to find the rotation angles of the head?
+
+            this.mouth.add_particles(0.1, 0.1, new_v.normalized().times(mag), fire_particles, t);
         }
     }
     get_head_position() {
