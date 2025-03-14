@@ -359,6 +359,18 @@ const Movement_Controls = defs.Movement_Controls =
           this.key_triggered_button("Attach to global camera", ["Shift", "R"],
                                      () => { this.will_take_over_uniforms = true; }, "blue");
           this.new_line();
+        //   this.live_string(box => {
+        //     const moving = this.thrust.norm() > 0;
+        //     let direction = "";
+        //     if (this.thrust[0] > 0) direction += "Left ";
+        //     if (this.thrust[0] < 0) direction += "Right ";
+        //     if (this.thrust[1] > 0) direction += "Down ";
+        //     if (this.thrust[1] < 0) direction += "Up ";
+        //     if (this.thrust[2] > 0) direction += "Forward ";
+        //     if (this.thrust[2] < 0) direction += "Backward ";
+        
+        //     box.textContent = moving ? `Moving: ${direction}` : "Stationary";
+        // });
       }
       first_person_flyaround(radians_per_frame, meters_per_frame, leeway = 70) {
           // Compare mouse's location to all four corners of a dead box:
@@ -398,22 +410,22 @@ const Movement_Controls = defs.Movement_Controls =
           this.matrix().post_multiply(Mat4.translation(...this.thrust.times(-meters_per_frame)));
           this.inverse().pre_multiply(Mat4.translation(...this.thrust.times(+meters_per_frame)));
       }
-    //   third_person_arcball(radians_per_frame) {
-    //       // Spin the scene around a point on an axis determined by user mouse drag:
-    //       const dragging_vector = this.mouse.from_center.minus(this.mouse.anchor);
-    //       if (dragging_vector.norm() <= 0)
-    //           return;
-    //       this.matrix().post_multiply(Mat4.translation(0, 0, -25));
-    //       this.inverse().pre_multiply(Mat4.translation(0, 0, +25));
+      third_person_arcball(radians_per_frame) {
+          // Spin the scene around a point on an axis determined by user mouse drag:
+          const dragging_vector = this.mouse.from_center.minus(this.mouse.anchor);
+          if (dragging_vector.norm() <= 0)
+              return;
+          this.matrix().post_multiply(Mat4.translation(0, 0, -25));
+          this.inverse().pre_multiply(Mat4.translation(0, 0, +25));
       
-    //       const rotation = Mat4.rotation(radians_per_frame * dragging_vector.norm(),
-    //                                       dragging_vector[1], dragging_vector[0], 0);
-    //       this.matrix().post_multiply(rotation);
-    //       this.inverse().pre_multiply(rotation);
+          const rotation = Mat4.rotation(radians_per_frame * dragging_vector.norm(),
+                                          dragging_vector[1], dragging_vector[0], 0);
+          this.matrix().post_multiply(rotation);
+          this.inverse().pre_multiply(rotation);
       
-    //       this.matrix().post_multiply(Mat4.translation(0, 0, +25));
-    //       this.inverse().pre_multiply(Mat4.translation(0, 0, -25));
-    //   }
+          this.matrix().post_multiply(Mat4.translation(0, 0, +25));
+          this.inverse().pre_multiply(Mat4.translation(0, 0, -25));
+      }
       render_animation(context) {
           const m = this.speed_multiplier * this.meters_per_frame,
                 r = this.speed_multiplier * this.radians_per_frame,
@@ -424,13 +436,13 @@ const Movement_Controls = defs.Movement_Controls =
               this.will_take_over_uniforms = false;
           }
 
-          this.thrust[2] = 1; // Or -1, if you want to move backward by default
+        //   this.thrust[2] = 1; // Or -1, if you want to move backward by default
 
           // Move in first-person.  Scale the normal camera aiming speed by dt for smoothness:
           this.first_person_flyaround(dt * r, dt * m);
           // Also apply third-person "arcball" camera mode if a mouse drag is occurring:
-        //   if (this.mouse.anchor)
-        //       this.third_person_arcball(dt * r);
+          if (this.mouse.anchor)
+              this.third_person_arcball(dt * r);
           // Log some values:
           this.pos = this.inverse().times(vec4(0, 0, 0, 1));
           this.z_axis = this.inverse().times(vec4(0, 0, 1, 0));

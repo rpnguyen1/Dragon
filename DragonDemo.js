@@ -37,6 +37,9 @@ const DragonDemoBase = defs.DragonDemoBase =
         
         // Debug
         this._debug_precision = 1;
+        this.move_direction = vec3(0, 0, 0);
+        this.is_moving = 0;
+        this.wiggle_factor = 0;
 
 
         // *** Shapes: ***At the beginning of our program, load one of each of these shape
@@ -251,6 +254,9 @@ export class DragonDemo extends DragonDemoBase
     // console.log(caller);
     // Call the setup code that we left inside the base class:
     super.render_animation( caller );
+    this.move_direction = this.animated_children[0].thrust;
+    // console.log(this.move_direction);
+    this.is_moving = this.move_direction.norm() > 0;
 
     const blue = color( 0,0,1,1 ), yellow = color( 1,0.7,0,1 ), red = color(1, 0, 0, 1);
     const fire_orange = color(1, 0.25098039215, 0, 1);
@@ -268,7 +274,7 @@ export class DragonDemo extends DragonDemoBase
     const sky_pos = Mat4.extractPositionFromMatrix(this.uniforms.camera_transform);
     // this.shapes.box.draw( caller, this.uniforms, Mat4.translation(0, 1, 0).times(Mat4.scale(1, 1, 1)), this.materials.Brick );
     // this.shapes.box.draw( caller, this.uniforms, Mat4.translation(-3, 1, -3).times(Mat4.scale(50, 10, 1)), this.materials.gold );
-    this.shapes.sky.draw( caller, this.uniforms, Mat4.translation(sky_pos[0], sky_pos[1], sky_pos[2]).times(Mat4.scale(600, 600, 600)), this.materials.sky );
+    // this.shapes.sky.draw( caller, this.uniforms, Mat4.translation(sky_pos[0], sky_pos[1], sky_pos[2]).times(Mat4.scale(600, 600, 600)), this.materials.sky );
     // this.shapes.box.draw( caller, this.uniforms, Mat4.translation(-5, 50, -10).times(Mat4.scale(50, 100, 1)), this.materials.gold );
     // this.shapes.box.draw( caller, this.uniforms, Mat4.translation(-5, 50, 80).times(Mat4.scale(50, 100, 1)), this.materials.Brick );
     
@@ -303,14 +309,48 @@ export class DragonDemo extends DragonDemoBase
     }
 
     // this code is to attach an object to the front of the camera
-    let base_transform_r = Mat4.identity().times(Mat4.scale(0.2,0.2,0.2).times(Mat4.translation(2.5,-1.5,-100)));
+    // linearly interpolate to wiggle when moving, put wiggle in the direction orthogonal to movement
+    // ex this is wiggle for forward or backward movement
+    /*
+          if (this.move_direction[0] > 0) direction += "Left ";
+      if (this.move_direction[0] < 0) direction += "Right ";
+      if (this.move_direction[1] > 0) direction += "Down ";
+      if (this.move_direction[1] < 0) direction += "Up ";
+      if (this.move_direction[2] > 0) direction += "Forward ";
+      if (this.move_direction[2] < 0) direction += "Backward ";
+    */
+
+    // Determine movement direction
+    let move_x = this.move_direction[0]; // Left/Right
+    let move_z = this.move_direction[2]; // Forward/Backward
+
+    // Lerp wiggle_factor instead of instantly modifying it
+    let target_wiggle = move_x || move_z ? 1 : 0; // 1 when moving, 0 when stopping
+    this.wiggle_factor = this.wiggle_factor * 0.9 + target_wiggle * 0.1; // Smooth interpolation
+
+    // Compute orthogonal sine motion
+    let wiggle_x = move_z * Math.sin(7 * t) * this.wiggle_factor * 9; // Side-to-side when moving forward/back
+    let wiggle_z = move_x * Math.sin(7 * t) * this.wiggle_factor * 9; // Forward/backward when moving left/right
+
+    // Apply transformation with interpolated sine motion
+    let base_transform_r = Mat4.identity()
+        .times(Mat4.scale(0.2, 0.2, 0.2))
+        .times(Mat4.translation(2.5 + wiggle_x, -20, -100 + wiggle_z));
+
+
     this.shapes.cylinder.draw(caller, this.uniforms, this.uniforms.camera_transform.times(base_transform_r), { ...this.materials.metal, color: yellow });
     let final_transform = this.uniforms.camera_transform.times(base_transform_r);
     let x = final_transform[0][3];
     let y = final_transform[1][3];
     let z = final_transform[2][3]; // could just use tovec3 to convert matrix to vector3
     const fabrik_target = vec3(x, y, z);
+
+    // this.settings.FOV
     
+    // Smoothly interpolate FOV
+    let target_FOV = this.is_moving ? 60 : 46; // Increase FOV when moving, return to 75 when stopping
+    let speed = 0.99; // Higher values slow it down
+    this.settings.FOV = this.settings.FOV * speed + target_FOV * (1 - speed);
 
     // code for the delay startup (prevent wacky lag in the beginning destroying particles)
     let point; 
@@ -334,7 +374,7 @@ export class DragonDemo extends DragonDemoBase
     
     // this.particleSystem.setParticle(0, 10, [point[0], point[1], point[2], 0, 0, 0]); // Dragon follows spline
     // this.particleSystem.draw(caller, this.uniforms, this.shapes, this.materials);
-    // this.dragon1.draw(caller, this.uniforms, point);
+    this.dragon1.draw(caller, this.uniforms, point);
 
     // this.dragon1.draw(caller, this.uniforms, fabrik_target);
 
@@ -405,6 +445,18 @@ export class DragonDemo extends DragonDemoBase
     this.new_line();
     // this.live_html("<h3>Debug Panel</h3>");
     // this.live_string(box => box.textContent = "FPS: " + this._debug_fps);
+
+    // this.live_string(box => {
+    //   let direction = "";
+    //   if (this.move_direction[0] > 0) direction += "Left ";
+    //   if (this.move_direction[0] < 0) direction += "Right ";
+    //   if (this.move_direction[1] > 0) direction += "Down ";
+    //   if (this.move_direction[1] < 0) direction += "Up ";
+    //   if (this.move_direction[2] > 0) direction += "Forward ";
+    //   if (this.move_direction[2] < 0) direction += "Backward ";
+  
+    //   box.textContent = this.is_moving ? `Moving: ${direction}` : "Stationary";
+    // });
 
     // ----- Camera Controls -----
     this.live_html("<b>Camera Controls</b>");
