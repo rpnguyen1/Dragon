@@ -8,6 +8,7 @@ import { Fabrik } from './fabrik.js'; // Forward And Backward Reaching Inverse K
 import { SpringMassDragon, FabrikDragon } from './Dragon.js'; // Import dragon types???
 import { Particle } from './Particles.js';
 import { VectorField } from './VectorField.js';
+import { ThermoBox } from './MeltingBox.js'
 
 
 // Pull these names into this module's scope for convenience:
@@ -129,7 +130,8 @@ const DragonDemoBase = defs.DragonDemoBase =
         this.max_num_particles = 500;
         // this.fire_particles = Array(this.max_num_particles);
         this.fire_particles = []
-        
+
+        this.thermo_box = new ThermoBox(100);
 
         // this.test_balls = [];
         // this.test_field = new VectorField(vec3(-1, 5, 1), vec3(-1, 0, 0));
@@ -339,6 +341,10 @@ export class DragonDemo extends DragonDemoBase
       if(t - p.creation_t < this.particle_lifetime) new_particles.push(p);
     }
     this.fire_particles = new_particles
+
+    // DRAW THERMOBOX
+    this.thermo_box.heat_step(this.t);
+    this.thermo_box.draw(caller, this.uniforms, this.materials, this.shapes);
  
     // Fabrik Dragon test
     this.dragon2.draw(caller, this.uniforms, fabrik_target);

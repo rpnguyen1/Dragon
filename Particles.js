@@ -21,10 +21,6 @@ export class ParticleProducer {
         // if (fire_particles.length < 500)
         fire_particles.push(particle);
     }
-
-    cull_particles() {
-        // Get rid of particles that move past a certain threshold.
-    }
 }
 
 export class Particle {

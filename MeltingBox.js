@@ -1,0 +1,221 @@
+import {tiny, defs} from './examples/common.js';
+
+// Pull these names into this module's scope for convenience:
+const { vec3, vec4, color, Mat4, Shape, Material, Shader, Texture, Component } = tiny;
+
+import { Particle } from './Particles.js';
+import  { Spring } from './Spring.js';
+
+// Each particle is held together by a spring.
+// For each spring, it holds two particles.
+
+// Box is made up a bunch of particles. 
+
+export class ThermoBox {
+    constructor(temp) {
+        // 3 Layers, with 3 rows x 3 cols
+        this.layers = 6;
+        this.n = 6;
+        this.m = 6;
+
+        this.k = 1.17; // Thermal diffusivity of copper
+        this.spec_heat = 0.385; // Specific heat of copper
+        this.mass_density = 8960;
+        this.init_temp = temp;
+
+        this.start_position = vec3(4, 4, 4)
+        this.spacing = 1/this.layers // Length of the spring
+        this.prev_t = 0;
+        this.d_t = 0.005 * this.spacing * this.spacing / this.k;
+        console.log(this.d_t)
+
+        this.particles = [];
+        this.springs = [];
+        this.topology = [];
+        this.U = new Array(this.layers).fill(null).map(
+            () => new Array(this.n).fill(null).map(
+                () => new Array(this.m).fill(0)
+            ) 
+        );
+
+        for(let l = 0; l<this.layers; l++) {
+            for(let i = 0; i<this.n; i++) {
+                for(let j = 0; j<this.m; j++) {
+                    if(l == 0 || l == this.layers - 1) this.U[l][i][j] = this.init_temp;
+                    else if(i == 0 || i == this.n - 1) this.U[l][i][j] = this.init_temp;
+                    else if(j == 0 || j == this.layers - 1) this.U[l][i][j] = this.init_temp;
+                }
+            }
+        }
+        
+        this.init()
+    }
+
+    init() {
+        // Layer i
+        //      0 1 2
+        //      3 4 5
+        //      6 7 8
+        for(let l = 0; l<this.layers; l++) {
+            let layer = []
+            for(let i = 0; i<this.n; i++) {
+                let row = []
+                for(let j = 0; j<this.m; j++) {
+                    row.push(l * this.n * this.m + i * this.n + j);
+                    let new_p = new ThermoParticle(
+                        0.1,
+                        0.1, 
+                        vec3(4 - l * this.spacing + 1.15, i * this.spacing + 7.5, j * this.spacing + 13.75),
+                        vec3(0, 0, 0)
+                    );
+                    this.particles.push(new_p);
+                }
+                layer.push(row)
+            }
+            this.topology.push(layer)
+        }
+
+        // Add springs.
+        let dirs_r = [0, -1, 0, 1]
+        let dirs_c = [1, 0, -1, 0]
+        for(let l = 0; l<this.layers; l++) {
+            for(let i = 0; i<this.n; i++) {
+                for(let j = 0; j<this.m; j++) {
+                    // Check moving up one layer
+                    if(this.checkbounds(l - 1, i, j)) {
+                        let new_spring = new Spring(
+                            this.topology[l][i][j],
+                            this.topology[l - 1][i][j],
+                            500,
+                            10,
+                            1
+                        )
+                        this.springs.push(new_spring);
+                    }
+
+                    // Check moving down one layer
+                    if(this.checkbounds(l + 1, i, j)) {
+                        let new_spring = new Spring(
+                            this.topology[l][i][j],
+                            this.topology[l + 1][i][j],
+                            500,
+                            10,
+                            1
+                        )
+                        this.springs.push(new_spring);
+                    }
+
+                    // Check in all other directions in current layer
+                    for(let dir = 0; dir < 4; dir++) {
+                        let new_i = i + dirs_r[dir]
+                        let new_j = j + dirs_c[dir]
+                        if(this.checkbounds(l, new_i, new_j)) {
+                            let new_spring = new Spring(
+                                this.topology[l][i][j],
+                                this.topology[l][new_i][new_j],
+                                500,
+                                10,
+                                1
+                            )
+                            this.springs.push(new_spring);
+                        }
+                    }
+                }
+            }
+        }
+    }
+
+    checkbounds(l, i, j) {
+        if(l < 0 || l >= this.layers ||
+            i < 0 || i >= this.n ||
+            j < 0 || j >= this.m) return false;
+        
+        return true;
+    }
+
+    laplacian() {
+        let dU = new Array(this.layers).fill(null).map(
+            () => new Array(this.n).fill(null).map(
+                () => new Array(this.m).fill(0)
+            ) 
+        );
+        for(let l = 0; l<this.layers; l++) {
+            for(let i = 0; i<this.n; i++) {
+                for(let j = 0; j<this.m; j++) {
+                    let U_tot = 0;
+                    let cnt = 0;
+                    // Check moving up one layer
+                    if(this.checkbounds(l - 1, i, j)) {
+                        U_tot += this.U[l - 1][i][j]
+                        cnt++;
+                    }
+
+                    // Check moving down one layer
+                    if(this.checkbounds(l + 1, i, j)) {
+                        U_tot += this.U[l + 1][i][j]
+                        cnt++;
+                    }
+
+                    // Check in all other directions in current layer
+                    let dirs_r = [0, -1, 0, 1]
+                    let dirs_c = [1, 0, -1, 0]
+                    for(let dir = 0; dir < 4; dir++) {
+                        let new_i = i + dirs_r[dir]
+                        let new_j = j + dirs_c[dir]
+                        if(this.checkbounds(l, new_i, new_j)) {
+                            U_tot += this.U[l][new_i][new_j]
+                            cnt++;
+                        }
+                    }
+
+                    let U_dx = (U_tot - cnt * this.U[l][i][j]) / (this.spacing * this.spacing)
+                    dU[l][i][j] = U_dx
+                }
+            }
+        }
+
+        return dU;
+    }
+
+    heat_step(t) {
+        if(t - this.prev_t < this.d_t) return;
+
+        this.prev_t = t;
+
+        let dU = this.laplacian()
+        this.U = this.U.map(
+            (layer, l) => layer.map(
+                (row, i) => row.map((val, j) => val + this.d_t * this.k * dU[l][i][j])
+            )
+        );
+        for(let l = 0; l<this.layers; l++) {
+            for(let i = 0; i<this.n; i++) {
+                for(let j = 0; j<this.m; j++) {
+                    if(l == 0 || l == this.layers - 1) this.U[l][i][j] = this.init_temp;
+                    else if(i == 0 || i == this.n - 1) this.U[l][i][j] = this.init_temp;
+                    else if(j == 0 || j == this.layers - 1) this.U[l][i][j] = this.init_temp;
+                    this.particles[this.topology[l][i][j]].temp = this.U[l][i][j];
+                }
+            }
+        }
+        // console.log("UUUUU: ", this.U);
+    }
+
+
+
+    draw(caller, uniforms, materials, shapes) {
+        for(let p of this.particles) {
+            p.color[2] = p.temp / this.init_temp
+            console.log(materials.metal)
+            shapes.ball.draw( caller, uniforms, p.particle_transform, { ...materials.plastic, color: p.color } );
+        }
+    }
+}
+
+class ThermoParticle extends Particle {
+    constructor(mass, radius, position, velocity, t = 0) {
+        super(mass, radius, position, velocity, t);
+
+        this.temp = 0;
+    }
+}
