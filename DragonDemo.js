@@ -56,6 +56,7 @@ const DragonDemoBase = defs.DragonDemoBase =
           'tail' : new defs.Shape_From_File("assets/dragon_tail.obj"),
           'teapot' : new defs.Shape_From_File("assets/teapot.obj"),
           'sky' : new defs.Shape_From_File("assets/sky_dome.obj"),
+          'clouds' : new defs.Shape_From_File("assets/sky_dome_cloud.obj"),
         };
 
         // *** Materials: ***  Basic_Shader() Phong_Shader() Textured_Phong() Fake_Bump_Map()
@@ -65,8 +66,9 @@ const DragonDemoBase = defs.DragonDemoBase =
           metal   : { shader: new defs.Phong_Shader2(), ambient: .2, diffusivity: 1, specularity:  0.1, colors: color( .9,.5,.9,1 ) },
           // Textures
           rgb : { shader: new defs.Fake_Bump_Map(), ambient: .1, texture: new Texture( "assets/rgb.jpg" ) },
-          sky : { shader: new defs.Fake_Bump_Map(), ambient: 2, texture: new Texture( "assets/doom_sky.png" ) },
-          grass : { shader: new defs.Fog_Shader(), ambient: .3, diffusivity: 10, specularity: 0.4, texture: new Texture( "assets/grass.jpg" ) },
+          sky : { shader: new defs.Fake_Bump_Map(), ambient: 0.9, texture: new Texture( "assets/doom_sky.png" ) },
+          clouds : { shader: new defs.Clouds(), ambient: 2, texture: new Texture( "assets/Clouds.png" ) },
+          grass : { shader: new defs.Grass(), ambient: .5, diffusivity: 1, specularity: 0.1, texture: new Texture( "assets/grass.jpg" ) },
           water : { shader: new defs.Scroll_Fog_Shader(), ambient: .5, diffusivity: 0.6, specularity: 2, 
                   texture: new Texture( "assets/water.png" ), 
                   distort: new Texture( "assets/T_noise_01_normal.PNG" ), 
@@ -267,14 +269,20 @@ export class DragonDemo extends DragonDemoBase
     this.uniforms.projection_transform = Mat4.perspective( this.settings.FOV * Math.PI/180, caller.width/caller.height, 1, 1000 );
 
     // !!! Draw ground
-    let floor_transform = Mat4.translation(0, 0, 0).times(Mat4.scale(100, 0.01, 100));
+    let floor_transform = Mat4.translation(0, 2, 0).times(Mat4.scale(10, 0.01, 100));
     this.shapes.box.draw( caller, this.uniforms, floor_transform, this.materials.water);
+    this.shapes.box.draw( caller, this.uniforms, Mat4.translation(0, 0, 0).times(Mat4.scale(1000, 0.01, 1000)), this.materials.grass);
     // Cube
 
     const sky_pos = Mat4.extractPositionFromMatrix(this.uniforms.camera_transform);
     // this.shapes.box.draw( caller, this.uniforms, Mat4.translation(0, 1, 0).times(Mat4.scale(1, 1, 1)), this.materials.Brick );
     // this.shapes.box.draw( caller, this.uniforms, Mat4.translation(-3, 1, -3).times(Mat4.scale(50, 10, 1)), this.materials.gold );
-    this.shapes.sky.draw( caller, this.uniforms, Mat4.translation(sky_pos[0], sky_pos[1], sky_pos[2]).times(Mat4.scale(400, 400, 400)), this.materials.sky );
+
+
+    this.shapes.sky.draw( caller, this.uniforms, Mat4.translation(sky_pos[0], sky_pos[1]+300, sky_pos[2]).times(Mat4.scale(400, 400, 400)), this.materials.sky );
+    
+    // this.shapes.sky.draw( caller, this.uniforms, Mat4.translation(sky_pos[0], sky_pos[1], sky_pos[2]).times(Mat4.scale(400, 400, 400)), this.materials.grass );
+    // this.shapes.clouds.draw( caller, this.uniforms, Mat4.translation(sky_pos[0], sky_pos[1], sky_pos[2]).times(Mat4.scale(100, 100, 100)), this.materials.clouds );
     // this.shapes.box.draw( caller, this.uniforms, Mat4.translation(-5, 50, -10).times(Mat4.scale(50, 100, 1)), this.materials.gold );
     // this.shapes.box.draw( caller, this.uniforms, Mat4.translation(-5, 50, 80).times(Mat4.scale(50, 100, 1)), this.materials.Brick );
     
@@ -366,7 +374,7 @@ export class DragonDemo extends DragonDemoBase
     .times(Mat4.scale(this.ball_radius, this.ball_radius, this.ball_radius));
     // this.shapes.ball.draw( caller, this.uniforms, ball_transform2, { ...this.materials.metal, color: yellow } );
     
-    this.curve.draw(caller, this.uniforms);
+    // this.curve.draw(caller, this.uniforms);
 
     point = this.spline.computePoint((t / 50) % 1); // Use the circular spline
     

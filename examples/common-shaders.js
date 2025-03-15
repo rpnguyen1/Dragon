@@ -1033,6 +1033,32 @@ const Fake_Bump_Map = defs.Fake_Bump_Map =
   };
 
 
+const Clouds = defs.Clouds =
+  class Clouds extends Textured_Phong {
+      fragment_glsl_code () {                            // ********* FRAGMENT SHADER *********
+          return this.shared_glsl_code () + `
+        varying vec2 f_tex_coord;
+        uniform sampler2D texture;
+
+        void main()  {        
+            vec4 tex_color = texture2D( texture, f_tex_coord );       // Sample texture image in the correct place.
+            // if( tex_color.w < .01 ) discard;
+
+            float darkness = 1.0 - length(tex_color.rgb); // 1 when black, 0 when white
+            float alpha = tex_color.w * (1.0 - darkness); // Reduce alpha based on darkness
+
+            if (alpha < 0.05) discard; // Optional: Fully discard near-zero alpha
+
+
+            // This time, slightly disturb normals based on sampling the same image that was used for texturing.
+            vec3 bumped_N  = N + tex_color.rgb - .5*vec3(1,1,1);
+            gl_FragColor = vec4( ( tex_color.xyz + shape_color.xyz ) * ambient, shape_color.w * alpha );
+            gl_FragColor.xyz += phong_model_lights( normalize( bumped_N ), vertex_worldspace );
+          } `;
+      }
+  };
+
+
 
   const Phong_Shader2 = defs.Phong_Shader2 = // with texture maps
   class Phong_Shader2 extends Shader {
@@ -1196,7 +1222,55 @@ const Fog_Shader = defs.Fog_Shader =
       
           //Blue for depth distance
           #define LOG2 1.442695
-          float fogDensity = 0.009;
+          float fogDensity = 0.003;
+          float fogDistance = length(camera_center - vertex_worldspace);
+          float fogAmount = 1. - exp2(-fogDensity * fogDensity * fogDistance * fogDistance * LOG2);
+          fogAmount = clamp(fogAmount, 0., 1.);
+          vec4 fog_color = vec4 (0.0, 0.41, 0.58, 1.0);
+          // vec4 fog_color = vec4 (0.7, 0.7, 0.7, 1.0);
+          gl_FragColor = mix(gl_FragColor, fog_color, fogAmount);
+        } `;
+  }
+  update_GPU(context, gpu_addresses, uniforms, model_transform, material) {
+    // update_GPU(): Add a little more to the base class's version of this method.
+    super.update_GPU(context, gpu_addresses, uniforms, model_transform, material);
+    // Updated for assignment 4
+    // context.uniform1f(gpu_addresses.animation_time, uniforms.animation_time / 1000);
+  }
+}
+
+
+const Grass = defs.Grass =
+  class Grass extends Phong_Shader2 {
+    fragment_glsl_code () {                            // ********* FRAGMENT SHADER *********
+      return this.shared_glsl_code () + `
+    varying vec2 f_tex_coord;
+    uniform sampler2D texture;
+    // uniform float animation_time;
+
+    void main()  {        
+
+          vec2 tilingFactor = vec2(10.0, 10.0);
+
+        // vec2 f_tex_2 = f_tex_coord;
+        // vec2 f_tex_2_distorted = f_tex_2 * tilingFactor;
+        vec2 f_tex_2 = f_tex_coord * tilingFactor;
+        vec2 f_tex_3 = vec2(f_tex_2.s, f_tex_2.t);
+
+
+        // vec4 tex_color = texture2D( texture, f_tex_coord );       // Sample texture image in the correct place.
+        vec4 tex_color = texture2D( texture, f_tex_3 );       // Sample texture image in the correct place.
+        if( tex_color.w < .01 ) discard;
+                        
+        // This time, slightly disturb normals based on sampling the same image that was used for texturing.
+        vec3 bumped_N  = N + tex_color.rgb - .5*vec3(1,1,1);
+        gl_FragColor = vec4( ( tex_color.xyz + shape_color.xyz ) * ambient, shape_color.w * tex_color.w );
+        gl_FragColor.xyz += phong_model_lights( normalize( bumped_N ), vertex_worldspace );
+      
+      
+          //Blue for depth distance
+          #define LOG2 1.442695
+          float fogDensity = 0.003;
           float fogDistance = length(camera_center - vertex_worldspace);
           float fogAmount = 1. - exp2(-fogDensity * fogDensity * fogDistance * fogDistance * LOG2);
           fogAmount = clamp(fogAmount, 0., 1.);
@@ -1296,7 +1370,7 @@ const Scroll_Fog_Shader = defs.Scroll_Fog_Shader =
       
           //Blue for depth distance
           #define LOG2 1.442695
-          float fogDensity = 0.009;
+          float fogDensity = 0.003;
           float fogDistance = length(camera_center - vertex_worldspace);
           float fogAmount = 1. - exp2(-fogDensity * fogDensity * fogDistance * fogDistance * LOG2);
           fogAmount = clamp(fogAmount, 0., 1.);
