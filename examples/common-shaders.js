@@ -1338,7 +1338,7 @@ const Grass = defs.Grass =
       
           //Blue for depth distance
           #define LOG2 1.442695
-          float fogDensity = 0.003;
+          float fogDensity = 0.009;
           float fogDistance = length(camera_center - vertex_worldspace);
           float fogAmount = 1. - exp2(-fogDensity * fogDensity * fogDistance * fogDistance * LOG2);
           fogAmount = clamp(fogAmount, 0., 1.);
@@ -2180,6 +2180,113 @@ fragment_glsl_code () {        // ********* FRAGMENT SHADER *********
 
   void main()  {        
       vec2 f_tex_2 = f_tex_coord;
+      vec2 f_tex_3 = vec2(f_tex_2.s, f_tex_2.t);
+
+
+      // vec4 tex_color = texture2D( albedoMap, f_tex_coord );       // Sample texture image in the correct place.
+      vec4 tex_color = texture2D( albedoMap, f_tex_3 );       // Sample texture image in the correct place.
+      vec4 normal_color = texture2D( normalMap, f_tex_3 );       // Sample texture image in the correct place.
+
+      // if( tex_color.w < .01 ) discard;
+                      
+      // This time, slightly disturb normals based on sampling the same image that was used for texturing.
+      vec3 bumped_N  = N + normal_color.rgb - .5*vec3(1,1,1);
+      gl_FragColor = vec4( ( tex_color.xyz + shape_color.xyz ) * ambient, shape_color.w * 1.0 );
+      gl_FragColor.xyz += phong_model_lights( normalize( bumped_N ), vertex_worldspace );
+  
+  
+      //Blue for depth distance
+      #define LOG2 1.442695
+      float fogDensity = 0.009;
+      float fogDistance = length(camera_center - vertex_worldspace);
+      float fogAmount = 1. - exp2(-fogDensity * fogDensity * fogDistance * fogDistance * LOG2);
+      fogAmount = clamp(fogAmount, 0., 1.);
+      vec4 fog_color = vec4 (0.0, 0.41, 0.58, 1.0);
+      // vec4 fog_color = vec4 (0.7, 0.7, 0.7, 1.0);
+      gl_FragColor = mix(gl_FragColor, fog_color, fogAmount);
+    } `;
+}
+static light_source (position, color, size) {
+    return {position, color, attenuation: 1 / size};
+}
+send_material (gl, gpu, material) {
+    gl.uniform4fv (gpu.shape_color, material.color);
+    gl.uniform1f (gpu.ambient, material.ambient);
+    gl.uniform1f (gpu.diffusivity, material.diffusivity);
+    gl.uniform1f (gpu.specularity, material.specularity);
+    gl.uniform1f (gpu.smoothness, material.smoothness);
+    gl.uniform1f (gpu.speed, material.speed);
+}
+send_uniforms (gl, gpu, uniforms, model_transform) {
+    const O = vec4 (0, 0, 0, 1), camera_center = uniforms.camera_transform.times (O).to3 ();
+    gl.uniform3fv (gpu.camera_center, camera_center);
+
+    // Use the squared scale trick from "Eric's blog" instead of inverse transpose matrix:
+    const squared_scale = model_transform.reduce (
+      (acc, r) => { return acc.plus (vec4 (...r).times_pairwise (r)); }, vec4 (0, 0, 0, 0)).to3 ();
+    gl.uniform3fv (gpu.squared_scale, squared_scale);
+
+    // Send the current matrices to the shader as a single pre-computed final matrix, the product.
+    const PCM = uniforms.projection_transform.times (uniforms.camera_inverse).times (model_transform);
+    gl.uniformMatrix4fv (gpu.model_transform, false, Matrix.flatten_2D_to_1D (model_transform.transposed ()));
+    gl.uniformMatrix4fv (gpu.projection_camera_model_transform, false,
+                         Matrix.flatten_2D_to_1D (PCM.transposed ()));
+
+    if ( !uniforms.lights || !uniforms.lights.length)
+        return;         // Lights omitted, ambient only
+
+    const light_positions_flattened = [], light_colors_flattened = [];
+    for (var i = 0; i < 4 * uniforms.lights.length; i++) {
+        light_positions_flattened.push (uniforms.lights[ Math.floor (i / 4) ].position[ i % 4 ]);
+        light_colors_flattened.push (uniforms.lights[ Math.floor (i / 4) ].color[ i % 4 ]);
+    }
+    gl.uniform4fv (gpu.light_positions_or_vectors, light_positions_flattened);
+    gl.uniform4fv (gpu.light_colors, light_colors_flattened);
+    gl.uniform1fv (gpu.light_attenuation_factors, uniforms.lights.map (l => l.attenuation));
+}
+update_GPU (context, gpu_addresses, uniforms, model_transform, material) {
+    const defaults    = {color: color (0, 0, 0, 1), ambient: 1, diffusivity: 1, specularity: 1, smoothness: 40, speed: 20.0};
+    let full_material = Object.assign (defaults, material);
+
+    this.send_material (context, gpu_addresses, full_material);
+    this.send_uniforms (context, gpu_addresses, uniforms, model_transform);
+
+    if (material.albedoMap && material.albedoMap.ready) {
+      context.uniform1i (gpu_addresses.albedoMap, 0);
+      material.albedoMap.activate (context, 0);
+    }
+    if (material.normalMap && material.normalMap.ready) {
+      context.uniform1i (gpu_addresses.normalMap, 1);
+      material.normalMap.activate (context, 1);
+    }
+    context.uniform1f(gpu_addresses.animation_time, uniforms.animation_time / 1000);
+
+}
+};
+
+
+
+
+const Grass2 = defs.Grass2 = // with texture maps
+class Grass2 extends PhongNShader {
+fragment_glsl_code () {        // ********* FRAGMENT SHADER *********
+  return this.shared_glsl_code () + `
+
+   
+  varying vec2 f_tex_coord;
+  uniform sampler2D albedoMap;
+  uniform sampler2D normalMap;
+  // varying vec3 T;  // Tangent in world space
+  // varying vec3 B;  // Bitangent in world space
+
+  uniform float animation_time;
+  uniform float speed;
+
+
+  void main()  {        
+      vec2 tilingFactor = vec2(200.0, 200.0);
+
+      vec2 f_tex_2 = f_tex_coord * tilingFactor;
       vec2 f_tex_3 = vec2(f_tex_2.s, f_tex_2.t);
 
 

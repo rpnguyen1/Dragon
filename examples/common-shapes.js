@@ -278,6 +278,155 @@ const Grid_Patch = defs.Grid_Patch =
       }
   };
 
+  // const terrain = defs.terrain =
+  //   class terrain extends Shape {
+  //       constructor(rows, columns, scale, heightScale, texture_coord_range = [[0, rows], [0, columns]]) {
+  //           super("position", "normal", "texture_coord");
+
+  //           // Generate Heightmap inside of the Grid_Patch.
+  //           const generateHeightMap = (width, height, scale, heightScale) => {
+  //               const heightMap = [];
+  //               for (let z = 0; z < height; z++) {
+  //                   heightMap[z] = [];
+  //                   for (let x = 0; x < width; x++) {
+  //                       const elevation = Math.sin(x * scale) * Math.cos(z * scale) * heightScale;
+  //                       heightMap[z][x] = elevation;
+  //                   }
+  //               }
+  //               return heightMap;
+  //           };
+
+  //           const heightMap = generateHeightMap(columns, rows, scale, heightScale);
+
+  //           const heightFunc = (x, z) => {
+  //               const xCoord = Math.floor(x);
+  //               const zCoord = Math.floor(z);
+
+  //               if (xCoord >= 0 && xCoord < columns && zCoord >= 0 && zCoord < rows) {
+  //                   return heightMap[zCoord][xCoord];
+  //               } else {
+  //                   return 0;
+  //               }
+  //           };
+
+  //           const next_row_function = (r, previous) => vec3(0, heightFunc(0, r), r);
+  //           const next_column_function = (c, previous, r) => vec3(c, heightFunc(c, r), r);
+
+  //           let points = [];
+  //           for (let r = 0; r <= rows; r++) {
+  //               points.push(new Array(columns + 1));
+  //               points[r][0] = next_row_function(r / rows, points[r - 1] && points[r - 1][0]);
+  //           }
+  //           for (let r = 0; r <= rows; r++)
+  //               for (let c = 0; c <= columns; c++) {
+  //                   if (c > 0) points[r][c] = next_column_function(c / columns, points[r][c - 1], r / rows);
+
+  //                   this.arrays.position.push(points[r][c]);
+  //                   const a1 = c / columns, a2 = r / rows, x_range = texture_coord_range[0],
+  //                       y_range = texture_coord_range[1];
+  //                   this.arrays.texture_coord.push(
+  //                       vec((a1) * x_range[1] + (1 - a1) * x_range[0], (a2) * y_range[1] + (1 - a2) * y_range[0]));
+  //               }
+  //           for (let r = 0; r <= rows; r++)
+  //               for (let c = 0; c <= columns; c++) {
+  //                   let curr = points[r][c], neighbors = new Array(4), normal = vec3(0, 0, 0);
+  //                   for (let [i, dir] of [[-1, 0], [0, 1], [1, 0], [0, -1]].entries())
+  //                       neighbors[i] = points[r + dir[1]] && points[r + dir[1]][c + dir[0]];
+
+  //                   for (let i = 0; i < 4; i++)
+  //                       if (neighbors[i] && neighbors[(i + 1) % 4])
+  //                           normal =
+  //                               normal.plus(neighbors[i].minus(curr).cross(neighbors[(i + 1) % 4].minus(curr)));
+  //                   normal.normalize();
+  //                   if (normal.every(x => x == x) && normal.norm() > .01) this.arrays.normal.push(normal.copy());
+  //                   else this.arrays.normal.push(vec3(0, 0, 1));
+  //               }
+
+  //           for (var h = 0; h < rows; h++)
+  //               for (var i = 0; i < 2 * columns; i++)
+  //                   for (var j = 0; j < 3; j++)
+  //                       this.indices.push(h * (columns + 1) + columns * ((i + (j % 2)) % 2) + (~~((j % 3) / 2) ?
+  //                           (~~(i / 2) + 2 * (i % 2)) : (~~(i / 2) + 1)));
+  //       }
+  //       static sample_array(array, ratio) {
+  //           const frac = ratio * (array.length - 1), alpha = frac - Math.floor(frac);
+  //           return array[Math.floor(frac)].mix(array[Math.ceil(frac)], alpha);
+  //       }
+  //   };
+  const terrain = defs.terrain =
+  class terrain extends Shape {        constructor(rows, columns, scale, heightScale, texture_coord_range = [[0, rows], [0, columns]]) {
+    super("position", "normal", "texture_coord");
+
+    const generateHeightMap = (width, height, scale, heightScale) => {
+        const heightMap = [];
+        for (let z = 0; z < height; z++) {
+            heightMap[z] = [];
+            for (let x = 0; x < width; x++) {
+                const elevation = (Math.sin(x * scale) + Math.cos(z * scale)) * heightScale;
+                heightMap[z][x] = elevation;
+            }
+        }
+        return heightMap;
+    };
+
+    const heightMap = generateHeightMap(columns, rows, scale, heightScale);
+
+    const heightFunc = (x, z) => {
+        const xCoord = Math.floor(x);
+        const zCoord = Math.floor(z);
+
+        if (xCoord >= 0 && xCoord < columns && zCoord >= 0 && zCoord < rows) {
+            return heightMap[zCoord][xCoord];
+        } else {
+            return 0;
+        }
+    };
+
+    const next_row_function = (r, previous) => vec3(0, heightFunc(0, r), r);
+    const next_column_function = (c, previous, r) => vec3(c, heightFunc(c, r), r);
+
+
+          let points = [];
+          for (let r = 0; r <= rows; r++) {
+              points.push(new Array(columns + 1));
+              points[r][0] = next_row_function(r / rows, points[r - 1] && points[r - 1][0]);
+          }
+          for (let r = 0; r <= rows; r++)
+              for (let c = 0; c <= columns; c++) {
+                  if (c > 0) points[r][c] = next_column_function(c / columns, points[r][c - 1], r / rows);
+
+                  this.arrays.position.push(points[r][c]);
+                  const a1 = c / columns, a2 = r / rows, x_range = texture_coord_range[0],
+                      y_range = texture_coord_range[1];
+                  this.arrays.texture_coord.push(
+                      vec((a1) * x_range[1] + (1 - a1) * x_range[0], (a2) * y_range[1] + (1 - a2) * y_range[0]));
+              }
+          for (let r = 0; r <= rows; r++)
+              for (let c = 0; c <= columns; c++) {
+                  let curr = points[r][c], neighbors = new Array(4), normal = vec3(0, 0, 0);
+                  for (let [i, dir] of [[-1, 0], [0, 1], [1, 0], [0, -1]].entries())
+                      neighbors[i] = points[r + dir[1]] && points[r + dir[1]][c + dir[0]];
+
+                  for (let i = 0; i < 4; i++)
+                      if (neighbors[i] && neighbors[(i + 1) % 4])
+                          normal =
+                              normal.plus(neighbors[i].minus(curr).cross(neighbors[(i + 1) % 4].minus(curr)));
+                  normal.normalize();
+                  if (normal.every(x => x == x) && normal.norm() > .01) this.arrays.normal.push(normal.copy());
+                  else this.arrays.normal.push(vec3(0, 0, 1));
+              }
+
+          for (var h = 0; h < rows; h++)
+              for (var i = 0; i < 2 * columns; i++)
+                  for (var j = 0; j < 3; j++)
+                      this.indices.push(h * (columns + 1) + columns * ((i + (j % 2)) % 2) + (~~((j % 3) / 2) ?
+                          (~~(i / 2) + 2 * (i % 2)) : (~~(i / 2) + 1)));
+      }
+      static sample_array(array, ratio) {
+          const frac = ratio * (array.length - 1), alpha = frac - Math.floor(frac);
+          return array[Math.floor(frac)].mix(array[Math.ceil(frac)], alpha);
+      }
+  };
 
 const Surface_Of_Revolution = defs.Surface_Of_Revolution =
   class Surface_Of_Revolution extends Grid_Patch {
