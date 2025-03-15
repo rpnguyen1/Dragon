@@ -400,8 +400,8 @@ update(t_step) {
       // Apply friction to horizontal velocities:
       // particle.velocity[0] *= (1 - this.frictionCoeff * t_step);
       // particle.velocity[2] *= (1 - this.frictionCoeff * t_step);
-      particle.velocity[0] *= 0.99;
-      particle.velocity[2] *= 0.99;
+      particle.velocity[0] *= 0.98;
+      particle.velocity[2] *= 0.98;
     } else{
       particle.collided = false;
     }

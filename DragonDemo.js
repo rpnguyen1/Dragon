@@ -69,6 +69,9 @@ const DragonDemoBase = defs.DragonDemoBase =
           sky : { shader: new defs.SkyShader(), ambient: 0.9, texture: new Texture( "assets/doom_sky.jpeg" ), 
             distort: new Texture( "assets/T_noise_01_normal.PNG" ), 
           },
+          sky : { shader: new defs.SkyShader(), ambient: 0.9, texture: new Texture( "assets/doom_sky.jpeg" ), 
+            distort: new Texture( "assets/T_noise_01_normal.PNG" ), 
+          },
           // sky : { shader: new defs.Fake_Bump_Map(), ambient: 0.9, texture: new Texture( "assets/doom_sky.png" ) },
           clouds : { shader: new defs.Clouds(), ambient: 2, texture: new Texture( "assets/Clouds.png" ) },
           grass : { shader: new defs.Grass(), ambient: .5, diffusivity: 1, specularity: 0.1, texture: new Texture( "assets/grass.jpg" ) },
@@ -225,7 +228,7 @@ const DragonDemoBase = defs.DragonDemoBase =
 
           // !!! Camera changed here
           // TODO: you can change the camera as needed.
-          Shader.assign_camera( Mat4.look_at (vec3 (5, 8, 15), vec3 (0, 5, 0), vec3 (0, 1, 0)), this.uniforms );
+          Shader.assign_camera( Mat4.look_at (vec3 (0, 20, 0), vec3 (0, 20, 30), vec3 (0, 1, 0)), this.uniforms );
         }
         this.uniforms.projection_transform = Mat4.perspective( this.settings.FOV * Math.PI/180, caller.width/caller.height, 1, 1000 );
 
@@ -359,8 +362,8 @@ export class DragonDemo extends DragonDemoBase
     // this.settings.FOV
     
     // Smoothly interpolate FOV
-    let target_FOV = this.is_moving ? 60 : 46; // Increase FOV when moving, return to 75 when stopping
-    let speed = 0.99; // Higher values slow it down
+    let target_FOV = this.is_moving ? 70 : 50; // Increase FOV when moving, return to 75 when stopping
+    let speed = 0.98; // Higher values slow it down
     this.settings.FOV = this.settings.FOV * speed + target_FOV * (1 - speed);
 
     // code for the delay startup (prevent wacky lag in the beginning destroying particles)

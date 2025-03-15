@@ -207,7 +207,7 @@ export class FabrikDragon extends Dragon {
         this.fireball.setGround(50, 5000)
         this.fireball.setGravity(9.8)
         this.fireball.setDragCoefficient(1);
-        this.fireball.setFrictionCoeff(0.9);
+        this.fireball.setFrictionCoeff(0.99);
         this.fireball.setRestitution(0);
         this.fireball.setIntegrationMethod("verlet", 0.01);
 
