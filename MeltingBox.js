@@ -98,7 +98,7 @@ export class ThermoBox {
                         0.1,
                         0.25, 
                         // vec3(4 - l * this.spacing + 1.15, i * this.spacing + 7.5, j * this.spacing + 13.75),
-                        vec3(4 - l * this.spacing, i * this.spacing, j * this.spacing),
+                        vec3(4 - l * this.spacing, i * this.spacing - this.spacing, j * this.spacing),
                         vec3(0, 0, 0)
                     );
                     new_p.color = color(0.039, 0.01176, 0.0078, 1) // Black
@@ -250,6 +250,9 @@ export class ThermoBox {
             let row = Math.floor(leftover / this.m);
             let col = leftover % this.m;
             let temp = this.U[layer][row][col];
+
+            if(layer == 0 || row == 0 || col == 0
+               || layer == this.layers - 1 || row == this.n - 1 ||col == this.m - 1 ) continue;
 
             let red = color(1, 0, 0, 1);
             let black = color(0.039, 0.01176, 0.0078, 1);

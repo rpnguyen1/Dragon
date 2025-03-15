@@ -337,13 +337,13 @@ export class DragonDemo extends DragonDemoBase
     // DRAW THERMOBOX
     if(this.thermo_box.hit_counter > 1000)
       this.thermo_box.heat_step(this.t);
+
     this.thermo_box.draw(caller, this.uniforms, this.materials, this.shapes);
 
-    if(this.thermo_box.U[4][4][4] >= 95 && this.thermo_box.go_time) {
-      console.log("asfasf")
+    if(this.thermo_box.U[4][4][4] >= 60 && this.thermo_box.go_time) {
       this.thermo_box.init_temp = 0.000000001;
       this.thermo_box.set_dirichlet_boundary();
-      console.log(this.thermo_box.U)
+      // console.log(this.thermo_box.U)
       this.thermo_box.go_time = false;
     }
  
