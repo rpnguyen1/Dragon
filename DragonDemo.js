@@ -150,6 +150,25 @@ const DragonDemoBase = defs.DragonDemoBase =
         this.d_t = 0.01 
         this.particle_lifetime = 0.7; // In seconds.
         this.start = false;
+
+        this.dragon_position = vec3(0, 10, 0);
+        this.dragon_direction = 0; 
+        this.dragon_speed = 0.5;
+
+        this.camera_offset = vec3(0, 6, -12);
+        this.keys = {
+          w: false,
+          a: false,
+          s: false,
+          d: false,
+          q: false,
+          e: false
+        };
+        
+        document.addEventListener('keydown', (e) => this.handleKeyDown(e));
+        document.addEventListener('keyup', (e) => this.handleKeyUp(e));
+ 
+
       }
 
       // // Mass distribution: Heavier in the middle, tapering at both ends.
@@ -199,10 +218,10 @@ const DragonDemoBase = defs.DragonDemoBase =
 
         // Setup -- This part sets up the scene's overall camera matrix, projection matrix, and lights:
         if( !caller.controls ){ 
-          this.animated_children.push( caller.controls = new defs.Movement_Controls( { uniforms: this.uniforms } ) );
-          this.animated_children.push( caller.debug = new defs.Debug_Info( { uniforms: this.uniforms } ) );
+          //this.animated_children.push( caller.controls = new defs.Movement_Controls( { uniforms: this.uniforms } ) );
+          //this.animated_children.push( caller.debug = new defs.Debug_Info( { uniforms: this.uniforms } ) );
           // { this.animated_children.push( caller.controls = new defs.Movement_Controls_2( { uniforms: this.uniforms } ) );
-          caller.controls.add_mouse_controls( caller.canvas );
+          //caller.controls.add_mouse_controls( caller.canvas );
 
           // Define the global camera and projection matrices, which are stored in shared_uniforms.  The camera
           // matrix follows the usual format for transforms, but with opposite values (cameras exist as
@@ -213,7 +232,12 @@ const DragonDemoBase = defs.DragonDemoBase =
 
           // !!! Camera changed here
           // TODO: you can change the camera as needed.
-          Shader.assign_camera( Mat4.look_at (vec3 (5, 8, 15), vec3 (0, 5, 0), vec3 (0, 1, 0)), this.uniforms );
+
+          if (!this.dragon_position) {
+            this.dragon_position = vec3(0, 10, 0);
+            this.dragon_direction = 0;
+          }
+          //Shader.assign_camera( Mat4.look_at (vec3 (5, 8, 15), vec3 (0, 5, 0), vec3 (0, 1, 0)), this.uniforms );
         }
         this.uniforms.projection_transform = Mat4.perspective( this.settings.FOV * Math.PI/180, caller.width/caller.height, 1, 1000 );
 
@@ -234,7 +258,79 @@ const DragonDemoBase = defs.DragonDemoBase =
         // this._debug_fps = caller.fps;
 
         // draw axis arrows.
-        this.shapes.axis.draw(caller, this.uniforms, Mat4.identity(), this.materials.rgb);
+        //this.shapes.axis.draw(caller, this.uniforms, Mat4.identity(), this.materials.rgb);
+      }
+
+      handleKeyDown(e) {
+        // Get the key that was pressed
+        const key = e.key.toLowerCase();
+        
+        // Update the key state if it's one we're tracking
+        if (key in this.keys) {
+            this.keys[key] = true;
+        }
+      }
+      
+      handleKeyUp(e) {
+          // Get the key that was released
+          const key = e.key.toLowerCase();
+          
+          // Update the key state if it's one we're tracking
+          if (key in this.keys) {
+              this.keys[key] = false;
+          }
+      }
+
+      updateDragonPosition() {
+        // Move forward/backward
+        if (this.keys.w) {
+            this.dragon_position[0] += Math.sin(this.dragon_direction) * this.dragon_speed;
+            this.dragon_position[2] += Math.cos(this.dragon_direction) * this.dragon_speed;
+        }
+        if (this.keys.s) {
+            this.dragon_position[0] -= Math.sin(this.dragon_direction) * this.dragon_speed;
+            this.dragon_position[2] -= Math.cos(this.dragon_direction) * this.dragon_speed;
+        }
+
+        // left right
+        if (this.keys.a) {
+          // Move left perpendicular to forward direction
+          this.dragon_position[0] -= Math.cos(this.dragon_direction) * this.dragon_speed;
+          this.dragon_position[2] += Math.sin(this.dragon_direction) * this.dragon_speed;
+        }
+        if (this.keys.d) {
+            // Move right perpendicular to forward direction
+            this.dragon_position[0] += Math.cos(this.dragon_direction) * this.dragon_speed;
+            this.dragon_position[2] -= Math.sin(this.dragon_direction) * this.dragon_speed;
+        }
+        
+      }
+
+      updateCameraPosition() {
+        // Calculate camera position based on dragon position and direction
+        
+        // First, calculate rotated offset
+        const rotatedOffsetX = Math.sin(this.dragon_direction) * this.camera_offset[2] + 
+                               Math.cos(this.dragon_direction) * this.camera_offset[0];
+        const rotatedOffsetZ = Math.cos(this.dragon_direction) * this.camera_offset[2] - 
+                               Math.sin(this.dragon_direction) * this.camera_offset[0];
+        
+        // Camera position is dragon position plus the rotated offset
+        const cameraPosition = vec3(
+            this.dragon_position[0] + rotatedOffsetX,
+            this.dragon_position[1] + this.camera_offset[1], // Y offset doesn't rotate
+            this.dragon_position[2] + rotatedOffsetZ
+        );
+        
+        // Look at position is slightly above the dragon
+        const lookAtPosition = vec3(
+            this.dragon_position[0],
+            this.dragon_position[1] + 1, // Slightly above the dragon
+            this.dragon_position[2]
+        );
+        
+        // Set the camera matrix
+        Shader.assign_camera(Mat4.look_at(cameraPosition, lookAtPosition, vec3(0, 1, 0)), this.uniforms);
       }
     }
 
@@ -298,7 +394,7 @@ export class DragonDemo extends DragonDemoBase
       this.start = true;
     }
 
-    // this code is to attach an object to the front of the camera
+    /* this code is to attach an object to the front of the camera
     let base_transform_r = Mat4.identity().times(Mat4.scale(0.2,0.2,0.2).times(Mat4.translation(2.5,-1.5,-100)));
     this.shapes.cylinder.draw(caller, this.uniforms, this.uniforms.camera_transform.times(base_transform_r), { ...this.materials.metal, color: yellow });
     let final_transform = this.uniforms.camera_transform.times(base_transform_r);
@@ -306,6 +402,16 @@ export class DragonDemo extends DragonDemoBase
     let y = final_transform[1][3];
     let z = final_transform[2][3]; // could just use tovec3 to convert matrix to vector3
     const fabrik_target = vec3(x, y, z);
+    */
+
+    this.updateDragonPosition();
+    this.updateCameraPosition();
+ 
+     const fabrik_target = vec3(
+         this.dragon_position[0] + Math.sin(this.dragon_direction) * 5, // Position in front of dragon
+         this.dragon_position[1] + 1,
+         this.dragon_position[2] + Math.cos(this.dragon_direction) * 5
+     );
     
 
     // code for the delay startup (prevent wacky lag in the beginning destroying particles)
@@ -322,7 +428,7 @@ export class DragonDemo extends DragonDemoBase
     .times(Mat4.scale(this.ball_radius, this.ball_radius, this.ball_radius));
     // this.shapes.ball.draw( caller, this.uniforms, ball_transform2, { ...this.materials.metal, color: yellow } );
     
-    this.curve.draw(caller, this.uniforms);
+    //this.curve.draw(caller, this.uniforms);
 
     point = this.spline.computePoint((t / 50) % 1); // Use the circular spline
     
