@@ -103,6 +103,7 @@ class Particle{
     this.scale = scale || 0.2;
     this.billboard = billboard || false;
     this.render = render || false;
+    this.collided = false;
   }
   update(mass, position, velocity, force, model, material, scale, billboard, render){
     this.mass = mass;
@@ -114,6 +115,9 @@ class Particle{
     this.scale = scale || 0.2;
     this.billboard = billboard || false;
     this.render = render || false;
+  }
+  updateMaterial(material){
+    this.material = material;
   }
 }
 
@@ -207,6 +211,13 @@ export class SpringMass {
       this.particles[id].scale = scale;
       this.particles[id].billboard = billboard;
       this.particles[id].render = render;
+    } else {
+      console.log("Invalid particle index");
+    }
+  }
+  setParticleMaterial(id, material){
+    if (this.particles[id]) {
+      this.particles[id].material = material;
     } else {
       console.log("Invalid particle index");
     }
@@ -383,6 +394,7 @@ update(t_step) {
     
     // 7. Collision impulse: if at ground and moving downward, reflect vertical velocity.
     if (particle.position[1] === this.groundLevel && particle.velocity[1] < 0) {
+      particle.collided = true;
       // particle.velocity[1] = -this.restitution * particle.velocity[1];
       particle.velocity[1] = -0 * particle.velocity[1];
       // Apply friction to horizontal velocities:
@@ -390,6 +402,8 @@ update(t_step) {
       // particle.velocity[2] *= (1 - this.frictionCoeff * t_step);
       particle.velocity[0] *= 0.99;
       particle.velocity[2] *= 0.99;
+    } else{
+      particle.collided = false;
     }
   });
 }

@@ -179,7 +179,7 @@ export class FabrikDragon extends Dragon {
 
 
         this.fireball = new SpringMass();
-        this.objectPoolSize = 20;
+        this.objectPoolSize = 40;
         this.fireball.createParticle(this.objectPoolSize);
         for (let i = 0; i < this.objectPoolSize; i++ ){
             this.fireball.setParticle(i, 10, [0, 10, 10, 0, 0, 0], this.shapes.square, this.materials.explosion, 10.0, true, false);
@@ -233,6 +233,16 @@ export class FabrikDragon extends Dragon {
         //         this.fireball.particles[1].velocity[1] / 2 ,
         //         this.fireball.particles[1].velocity[2] / 2], 
         //         this.shapes.leg, this.materials.dragon);
+
+        this.fireball.particles.forEach( p => {
+
+                if (p.collided) {
+                    p.updateMaterial(this.materials.fire);
+                } else{
+                    p.updateMaterial(this.materials.explosion);
+                }
+        });
+
         this.fireball.draw(caller, uniforms, this.shapes, this.materials);
         // In your draw routine, render the chain:
         this.dragonTail.display(caller, uniforms, this.shapes, this.materials);
