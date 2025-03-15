@@ -383,10 +383,13 @@ update(t_step) {
     
     // 7. Collision impulse: if at ground and moving downward, reflect vertical velocity.
     if (particle.position[1] === this.groundLevel && particle.velocity[1] < 0) {
-      particle.velocity[1] = -this.restitution * particle.velocity[1];
+      // particle.velocity[1] = -this.restitution * particle.velocity[1];
+      particle.velocity[1] = -0 * particle.velocity[1];
       // Apply friction to horizontal velocities:
-      particle.velocity[0] *= (1 - this.frictionCoeff * t_step);
-      particle.velocity[2] *= (1 - this.frictionCoeff * t_step);
+      // particle.velocity[0] *= (1 - this.frictionCoeff * t_step);
+      // particle.velocity[2] *= (1 - this.frictionCoeff * t_step);
+      particle.velocity[0] *= 0.99;
+      particle.velocity[2] *= 0.99;
     }
   });
 }

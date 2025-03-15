@@ -190,7 +190,7 @@ export class FabrikDragon extends Dragon {
 
         this.shooting = false;
         this.shootTimer = 0;
-        this.shootInterval = 0.05; // Delay between particles (in seconds)
+        this.shootInterval = 0.02; // Delay between particles (in seconds)
         this.shootCounter = 0;
         this.previousHeadPosition = null; // Initialize previous head position
 
@@ -204,11 +204,12 @@ export class FabrikDragon extends Dragon {
         // this.fireball.link(4, 0, 1, 100, 200, 1, this.shapes.leg, this.materials.dragon, true);
 
         // this.fireball.setGround(50000, 500000)
-        this.fireball.setGround(50, 50)
+        this.fireball.setGround(50, 5000)
         this.fireball.setGravity(9.8)
-        this.fireball.setDragCoefficient(0.99);
-        this.fireball.setFrictionCoeff(0.99);
-        this.fireball.setIntegrationMethod("verlet", 0.001);
+        this.fireball.setDragCoefficient(1);
+        this.fireball.setFrictionCoeff(0.9);
+        this.fireball.setRestitution(0);
+        this.fireball.setIntegrationMethod("verlet", 0.01);
 
         this.fireball.isRunning = false;
         // this.fireball.isRunning = true;
