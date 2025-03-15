@@ -14,9 +14,9 @@ import  { Spring } from './Spring.js';
 export class ThermoBox {
     constructor(temp) {
         // 3 Layers, with 3 rows x 3 cols
-        this.layers = 6;
-        this.n = 6;
-        this.m = 6;
+        this.layers = 10;
+        this.n = 10;
+        this.m = 10;
 
         this.k = 1.17; // Thermal diffusivity of copper
         this.spec_heat = 0.385; // Specific heat of copper
@@ -24,9 +24,9 @@ export class ThermoBox {
         this.init_temp = temp;
 
         this.start_position = vec3(4, 4, 4)
-        this.spacing = 1/this.layers // Length of the spring
+        this.spacing = 7/this.layers // Length of the spring
         this.prev_t = 0;
-        this.d_t = 0.005 * this.spacing * this.spacing / this.k;
+        this.d_t = 0.01 * this.spacing * this.spacing / this.k;
 
         this.particles = [];
         this.springs = [];
@@ -63,7 +63,7 @@ export class ThermoBox {
                     row.push(l * this.n * this.m + i * this.n + j);
                     let new_p = new ThermoParticle(
                         0.1,
-                        0.1, 
+                        0.25, 
                         // vec3(4 - l * this.spacing + 1.15, i * this.spacing + 7.5, j * this.spacing + 13.75),
                         vec3(4 - l * this.spacing, i * this.spacing, j * this.spacing),
                         vec3(0, 0, 0)
@@ -194,17 +194,24 @@ export class ThermoBox {
                     if(l == 0 || l == this.layers - 1) this.U[l][i][j] = this.init_temp;
                     else if(i == 0 || i == this.n - 1) this.U[l][i][j] = this.init_temp;
                     else if(j == 0 || j == this.layers - 1) this.U[l][i][j] = this.init_temp;
-                    this.particles[this.topology[l][i][j]].temp = this.U[l][i][j];
                 }
             }
         }
-        // console.log("UUUUU: ", this.U);
+
+        console.log("UUUUU: ", this.U);
     }
 
     draw(caller, uniforms, materials, shapes) {
         // shapes.ball.draw( caller, uniforms, this.particles[0].particle_transform, { ...materials.plastic, color: this.particles[0].color } );
-        for(let p of this.particles) {
-            p.color[2] = 1 - p.temp / this.init_temp
+        for(let i = 0; i<this.particles.length; i++) {
+            let p = this.particles[i];
+            let layer = Math.floor(i / (this.n * this.m));
+            let leftover = i % (this.n * this.m);
+            let row = Math.floor(leftover / this.m);
+            let col = leftover % this.m;
+            let temp = this.U[layer][row][col];
+
+            p.color[2] = 1 - temp / this.init_temp
             shapes.ball.draw( caller, uniforms, p.particle_transform, { ...materials.plastic, color: p.color } );
         }
     }

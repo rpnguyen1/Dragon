@@ -120,7 +120,7 @@ const DragonDemoBase = defs.DragonDemoBase =
         // console.log(point); // { x: 0.5, y: 0.5, z: 0.5 }
 
         /************************************* Particle Spring dragon implementation ****************************************/
-        this.dragon1 = new SpringMassDragon(this.shapes, this.materials);
+        // this.dragon1 = new SpringMassDragon(this.shapes, this.materials);
 
         /************************************* Fabrik dragon implementation ****************************************/
         // Suppose you want a chain starting at (0, 10, 0) with 10 segments:
@@ -132,6 +132,7 @@ const DragonDemoBase = defs.DragonDemoBase =
         this.fire_particles = []
 
         this.thermo_box = new ThermoBox(100);
+        // this.thermo_box = new ThermoBox(0.0000000000001);
         // this.thermo_box.U[0][1][1] = 100;
         // this.thermo_box.U[1][0][1] = 100;
         // this.thermo_box.U[1][1][0] = 100;
@@ -323,7 +324,7 @@ export class DragonDemo extends DragonDemoBase
     
     // this.particleSystem.setParticle(0, 10, [point[0], point[1], point[2], 0, 0, 0]); // Dragon follows spline
     // this.particleSystem.draw(caller, this.uniforms, this.shapes, this.materials);
-    this.dragon1.draw(caller, this.uniforms, point);
+    // this.dragon1.draw(caller, this.uniforms, point);
     // this.dragon1.draw(caller, this.uniforms, fabrik_target);
 
     // Pool and cull out dead particles
