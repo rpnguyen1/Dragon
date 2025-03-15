@@ -335,7 +335,8 @@ export class DragonDemo extends DragonDemoBase
     this.fire_particles = new_particles
 
     // DRAW THERMOBOX
-    this.thermo_box.heat_step(this.t);
+    if(this.thermo_box.hit_counter > 1000)
+      this.thermo_box.heat_step(this.t);
     this.thermo_box.draw(caller, this.uniforms, this.materials, this.shapes);
  
     // Fabrik Dragon test
@@ -436,6 +437,19 @@ export class DragonDemo extends DragonDemoBase
         this.dragon2.field.affect_particle(p);
       this.integrate(p);
       p.update_transform();
+
+      let x = p.position[0];
+      let y = p.position[1];
+      let z = p.position[2];
+
+      if(x > this.thermo_box.min_x && x < this.thermo_box.max_x &&
+         y > this.thermo_box.min_y && y < this.thermo_box.max_y &&
+         z > this.thermo_box.min_z && z < this.thermo_box.max_z){
+          // console.log("NOICE.")
+          this.thermo_box.go_time = true;
+          this.thermo_box.hit_counter++;
+      }
+
     }
   }
 

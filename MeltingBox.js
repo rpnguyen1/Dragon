@@ -37,6 +37,9 @@ export class ThermoBox {
             ) 
         );
 
+        this.go_time = false;
+        this.hit_counter = 0;
+
         for(let l = 0; l<this.layers; l++) {
             for(let i = 0; i<this.n; i++) {
                 for(let j = 0; j<this.m; j++) {
@@ -48,6 +51,49 @@ export class ThermoBox {
         }
         
         this.init()
+
+        this.min_y = Math.min(
+            this.particles[this.topology[0][this.n - 1][this.m - 1]].position[1],
+            this.particles[this.topology[0][0][this.m - 1]].position[1],
+            this.particles[this.topology[0][this.n - 1][0]].position[1],
+            this.particles[this.topology[0][0][0]].position[1],
+        )
+        this.max_y = Math.max(
+            this.particles[this.topology[0][this.n - 1][this.m - 1]].position[1],
+            this.particles[this.topology[0][0][this.m - 1]].position[1],
+            this.particles[this.topology[0][this.n - 1][0]].position[1],
+            this.particles[this.topology[0][0][0]].position[1],
+        )
+
+        this.min_x = Math.min(
+            this.particles[this.topology[0][this.n - 1][this.m - 1]].position[0],
+            this.particles[this.topology[0][0][this.m - 1]].position[0],
+            this.particles[this.topology[this.layers - 1][this.n - 1][this.m - 1]].position[0],
+            this.particles[this.topology[this.layers - 1][0][this.m - 1]].position[0],
+        )
+        this.max_x = Math.max(
+            this.particles[this.topology[this.layers - 1][this.n - 1][this.m - 1]].position[0],
+            this.particles[this.topology[0][0][this.m - 1]].position[0],
+            this.particles[this.topology[0][this.n - 1][0]].position[0],
+            this.particles[this.topology[0][0][0]].position[0],
+        )
+
+        this.min_z = Math.min(
+            this.particles[this.topology[0][this.n - 1][this.m - 1]].position[2],
+            this.particles[this.topology[0][0][this.m - 1]].position[2],
+            this.particles[this.topology[0][this.n - 1][0]].position[2],
+            this.particles[this.topology[0][0][0]].position[2],
+        )
+        this.max_z = Math.max(
+            this.particles[this.topology[0][this.n - 1][this.m - 1]].position[2],
+            this.particles[this.topology[0][0][this.m - 1]].position[2],
+            this.particles[this.topology[0][this.n - 1][0]].position[2],
+            this.particles[this.topology[0][0][0]].position[2],
+        )
+
+        console.log(this.min_x, this.max_x)
+        console.log(this.min_y, this.max_y)
+        console.log(this.min_z, this.max_z)
     }
 
     init() {
@@ -68,6 +114,7 @@ export class ThermoBox {
                         vec3(4 - l * this.spacing, i * this.spacing, j * this.spacing),
                         vec3(0, 0, 0)
                     );
+                    new_p.color = color(0.039, 0.01176, 0.0078, 1) // Black
                     this.particles.push(new_p);
                 }
                 layer.push(row)
@@ -188,6 +235,8 @@ export class ThermoBox {
                 (row, i) => row.map((val, j) => val + this.d_t * this.k * dU[l][i][j])
             )
         );
+
+        // Set direlecht boundaries
         for(let l = 0; l<this.layers; l++) {
             for(let i = 0; i<this.n; i++) {
                 for(let j = 0; j<this.m; j++) {
@@ -198,7 +247,7 @@ export class ThermoBox {
             }
         }
 
-        console.log("UUUUU: ", this.U);
+        // console.log("UUUUU: ", this.U);
     }
 
     draw(caller, uniforms, materials, shapes) {
@@ -211,7 +260,11 @@ export class ThermoBox {
             let col = leftover % this.m;
             let temp = this.U[layer][row][col];
 
-            p.color[2] = 1 - temp / this.init_temp
+            let red = color(1, 0, 0, 1);
+            let black = color(0.039, 0.01176, 0.0078, 1);
+            let color_dir = red.minus(black);
+            let c = black.plus(color_dir.times(1 / this.init_temp * temp));
+            p.color = c;
             shapes.ball.draw( caller, uniforms, p.particle_transform, { ...materials.plastic, color: p.color } );
         }
     }
