@@ -8,6 +8,7 @@ import { Fabrik } from './fabrik.js'; // Forward And Backward Reaching Inverse K
 import { SpringMassDragon, FabrikDragon } from './Dragon.js'; // Import dragon types???
 import { Particle } from './Particles.js';
 import { VectorField } from './VectorField.js';
+import { ThermoBox } from './MeltingBox.js'
 
 
 // Pull these names into this module's scope for convenience:
@@ -119,7 +120,7 @@ const DragonDemoBase = defs.DragonDemoBase =
         // console.log(point); // { x: 0.5, y: 0.5, z: 0.5 }
 
         /************************************* Particle Spring dragon implementation ****************************************/
-        this.dragon1 = new SpringMassDragon(this.shapes, this.materials);
+        // this.dragon1 = new SpringMassDragon(this.shapes, this.materials);
 
         /************************************* Fabrik dragon implementation ****************************************/
         // Suppose you want a chain starting at (0, 10, 0) with 10 segments:
@@ -129,25 +130,18 @@ const DragonDemoBase = defs.DragonDemoBase =
         this.max_num_particles = 500;
         // this.fire_particles = Array(this.max_num_particles);
         this.fire_particles = []
+
+        this.thermo_box = new ThermoBox(100);
+        // this.thermo_box = new ThermoBox(0.0000000000001);
+        // this.thermo_box.U[0][1][1] = 100;
+        // this.thermo_box.U[1][0][1] = 100;
+        // this.thermo_box.U[1][1][0] = 100;
         
 
-        // this.test_balls = [];
-        // this.test_field = new VectorField(vec3(-1, 5, 1), vec3(-1, 0, 0));
-        // this.test_field.init();
-
-        // this.test_balls.push(new Particle(0.1, 0.5, vec3(-1, 3, 1), vec3(-1, 0, 0)));
-        // this.test_balls.push(new Particle(0.1, 0.5, vec3(-1, 3.5, 1), vec3(-1, 0, 0)));
-        // this.test_balls.push(new Particle(0.1, 0.5, vec3(-1, 3.7, 1), vec3(-1, 0, 0)));
-        // this.test_balls.push(new Particle(0.1, 0.5, vec3(-1, 4, 1), vec3(-1, 0, 0)));
-        // this.test_balls.push(new Particle(0.1, 0.5, vec3(-1, 5, 1), vec3(-1, 0, 0)));
-        // this.test_balls.push(new Particle(0.1, 0.5, vec3(-1, 6, 1), vec3(-1, 0, 0)));
-
-        // this.test_balls.push(new Particle(0.1, 0.5, vec3(-1, 4, 1), vec3(-1, 0, 0)));
-        // this.test_balls.push(new Particle(0.1, 0.5, vec3(-1, 5, 1), vec3(-1, 0, 0)));
-        // this.test_balls.push(new Particle(0.1, 0.5, vec3(-1, 6, 1), vec3(-1, 0, 0)));
-        
-
-        this.d_t = 0.01 
+        this.d_t = 0.01;
+        this.gravity = 9.8
+        this.gks = 100;
+        this.gkd = 10;
         this.particle_lifetime = 0.7; // In seconds.
         this.start = false;
       }
@@ -322,7 +316,7 @@ export class DragonDemo extends DragonDemoBase
     .times(Mat4.scale(this.ball_radius, this.ball_radius, this.ball_radius));
     // this.shapes.ball.draw( caller, this.uniforms, ball_transform2, { ...this.materials.metal, color: yellow } );
     
-    this.curve.draw(caller, this.uniforms);
+    // this.curve.draw(caller, this.uniforms);
 
     point = this.spline.computePoint((t / 50) % 1); // Use the circular spline
     
@@ -331,7 +325,7 @@ export class DragonDemo extends DragonDemoBase
     // this.particleSystem.setParticle(0, 10, [point[0], point[1], point[2], 0, 0, 0]); // Dragon follows spline
     // this.particleSystem.draw(caller, this.uniforms, this.shapes, this.materials);
     // this.dragon1.draw(caller, this.uniforms, point);
-    this.dragon1.draw(caller, this.uniforms, fabrik_target);
+    // this.dragon1.draw(caller, this.uniforms, fabrik_target);
 
     // Pool and cull out dead particles
     let new_particles = Array();
@@ -339,6 +333,19 @@ export class DragonDemo extends DragonDemoBase
       if(t - p.creation_t < this.particle_lifetime) new_particles.push(p);
     }
     this.fire_particles = new_particles
+
+    // DRAW THERMOBOX
+    if(this.thermo_box.hit_counter > 1000)
+      this.thermo_box.heat_step(this.t);
+
+    this.thermo_box.draw(caller, this.uniforms, this.materials, this.shapes);
+
+    if(this.thermo_box.U[4][4][4] >= 60 && this.thermo_box.go_time) {
+      this.thermo_box.init_temp = 0.000000001;
+      this.thermo_box.set_dirichlet_boundary();
+      // console.log(this.thermo_box.U)
+      this.thermo_box.go_time = false;
+    }
  
     // Fabrik Dragon test
     this.dragon2.draw(caller, this.uniforms, fabrik_target);
@@ -353,7 +360,7 @@ export class DragonDemo extends DragonDemoBase
     let t_sim = t;
     let t_next = t_sim + dt;
     for(; t_sim<=t_next; t_sim += this.d_t) {
-      this.update_particles();
+      this.update_fire_breath_particles();
       for(let p of this.fire_particles) {
         let c = null;
         if(p.color[1] != 0) {
@@ -364,6 +371,8 @@ export class DragonDemo extends DragonDemoBase
         // this.shapes.ball.draw( caller, this.uniforms, p.particle_transform, { ...this.materials.metal, color: blue } );
       }
     }
+
+    // this.update_thermo_box_particles();
   }
 
   integrate(p) {
@@ -371,21 +380,85 @@ export class DragonDemo extends DragonDemoBase
     p.position = p.position.plus(p.velocity.times(this.d_t));
   }
 
-  update_particles(){
-    // Integration
+  update_thermo_box_particles() {
+    // Iterating through all springs and updating forces.
+    for(let s of this.thermo_box.springs){
+      let p_i = this.thermo_box.particles[s.p_i];
+      let p_j = this.thermo_box.particles[s.p_j];
+
+      // Get distance between particles
+      let d_ij = p_j.position.minus(p_i.position);
+      let d_ij_mag = d_ij.norm();
+      let d_ij_norm = d_ij.normalized();
+
+      // Total force from spring
+      let F_s = d_ij_norm.times(s.ks * (d_ij_mag - s.l));
+      console.log("Spring force: ", F_s);
+
+      // Total force from damper
+      let F_d = d_ij_norm.times(-1.0 * s.kd * (p_j.velocity.minus(p_i.velocity)).dot(d_ij_norm));
+      console.log("Damping force: ", F_d);
+
+      // Net Force
+      let F_net = F_s.minus(F_d);
+      
+      // Update bi-particle forces
+      p_i.net_force = p_i.net_force.plus(F_net);
+      p_j.net_force = p_j.net_force.minus(F_net);
+      
+      console.log("Spring force: ", F_s);
+      console.log("Damping force: ", F_d);
+      console.log("Total force: ", F_net);
+    }
+
+    // // Integration
+    for(let p of this.thermo_box.particles) {
+      this.integrate(p);
+    }
+
+    // // Collision Detection
+    for(let p of this.thermo_box.particles) {
+      // Particle has hit the ground
+      let penetration = p.radius - p.position[1];
+      if(penetration > 0.01) {
+        let norm = vec3(0, 1, 0);
+        let F_s = norm.times(this.gks * penetration);
+        let F_d = norm.times(-1.0 * this.gkd * p.velocity.dot(norm));
+        let F_net = F_s.plus(F_d);
+        p.net_force = p.net_force.plus(F_net);
+        this.integrate(p);  
+        // console.log("Spring force: ", F_s);
+        // console.log("Damping force: ", F_d);
+      }
+
+      // console.log("Particle 0 velocity ", this.particles[0].velocity);
+
+      p.update_transform();
+      p.net_force = vec3(0, -this.gravity, 0);
+    }
+  }
+
+  update_fire_breath_particles(){
+    // Updating particles for fire particles
     for(let p of this.fire_particles) {
       if(this.dragon2.field != null)
         this.dragon2.field.affect_particle(p);
       this.integrate(p);
       p.update_transform();
+
+      let x = p.position[0];
+      let y = p.position[1];
+      let z = p.position[2];
+
+      if(x > this.thermo_box.min_x && x < this.thermo_box.max_x &&
+         y > this.thermo_box.min_y && y < this.thermo_box.max_y &&
+         z > this.thermo_box.min_z && z < this.thermo_box.max_z){
+          // console.log("NOICE.")
+          this.thermo_box.go_time = true;
+          this.thermo_box.hit_counter++;
+      }
+
     }
-
-    // for(let p of this.test_balls) {
-    //   this.test_field.affect_particle(p);
-    //   this.integrate(p);
-    //   p.update_transform();
-    // }
-
   }
 
   render_controls()

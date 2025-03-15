@@ -62,31 +62,24 @@ export class VectorField {
         // Used for rotating vector field around.
         let y_axis = vec3(0, 1, 0);
         let x_axis = vec3(1, 0, 0);
-        console.log(this.dir)
         let vel_proj_xz = this.dir.minus(y_axis.times(this.dir.dot(y_axis)));
-        console.log(vel_proj_xz)
         let perp = y_axis.cross(vel_proj_xz);
-        console.log(perp)
         // How we get from VF dir to its Projection
         this.theta1 = this.get_angle_between_vectors(this.dir, vel_proj_xz);
         if (this.dir.cross(vel_proj_xz)[1] < 0) this.theta1 = -this.theta1;
-        console.log(this.theta1 * 180 / Math.PI)
         // How we get from the x-axis to the projection
         this.theta2 = this.get_angle_between_vectors(x_axis, vel_proj_xz);
         if (x_axis.cross(vel_proj_xz)[1] < 0) this.theta2 = -this.theta2;
-        console.log(this.theta2 * 180 / Math.PI)
 
         if(perp[1] < 0) perp = perp.times(-1);
 
         this.rot1 = Mat4.rotation(this.theta2, 0, 1, 0);
         this.rot2 = Mat4.rotation(-this.theta1, perp[0], perp[1], perp[2]);
-        this.rot = this.rot2.times(this.rot1)
+        this.rot = this.rot2.times(this.rot1);
 
         this.rot1_to_x = Mat4.rotation(this.theta1, perp[0], perp[1], perp[2]);
         this.rot2_to_x = Mat4.rotation(-this.theta2, 0, 1, 0);
-        this.rot_to_x = this.rot2_to_x.times(this.rot1_to_x)
-
-        console.log(this.field)
+        this.rot_to_x = this.rot2_to_x.times(this.rot1_to_x);
     }
 
     get_vector_index(p) {
