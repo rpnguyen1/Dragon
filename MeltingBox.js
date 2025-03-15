@@ -27,7 +27,6 @@ export class ThermoBox {
         this.spacing = 1/this.layers // Length of the spring
         this.prev_t = 0;
         this.d_t = 0.005 * this.spacing * this.spacing / this.k;
-        console.log(this.d_t)
 
         this.particles = [];
         this.springs = [];
@@ -65,7 +64,8 @@ export class ThermoBox {
                     let new_p = new ThermoParticle(
                         0.1,
                         0.1, 
-                        vec3(4 - l * this.spacing + 1.15, i * this.spacing + 7.5, j * this.spacing + 13.75),
+                        // vec3(4 - l * this.spacing + 1.15, i * this.spacing + 7.5, j * this.spacing + 13.75),
+                        vec3(4 - l * this.spacing, i * this.spacing, j * this.spacing),
                         vec3(0, 0, 0)
                     );
                     this.particles.push(new_p);
@@ -86,9 +86,9 @@ export class ThermoBox {
                         let new_spring = new Spring(
                             this.topology[l][i][j],
                             this.topology[l - 1][i][j],
-                            500,
-                            10,
-                            1
+                            5,
+                            1,
+                            this.spacing
                         )
                         this.springs.push(new_spring);
                     }
@@ -100,7 +100,7 @@ export class ThermoBox {
                             this.topology[l + 1][i][j],
                             500,
                             10,
-                            1
+                            this.spacing
                         )
                         this.springs.push(new_spring);
                     }
@@ -115,7 +115,7 @@ export class ThermoBox {
                                 this.topology[l][new_i][new_j],
                                 500,
                                 10,
-                                1
+                                this.spacing
                             )
                             this.springs.push(new_spring);
                         }
@@ -201,12 +201,10 @@ export class ThermoBox {
         // console.log("UUUUU: ", this.U);
     }
 
-
-
     draw(caller, uniforms, materials, shapes) {
+        // shapes.ball.draw( caller, uniforms, this.particles[0].particle_transform, { ...materials.plastic, color: this.particles[0].color } );
         for(let p of this.particles) {
-            p.color[2] = p.temp / this.init_temp
-            console.log(materials.metal)
+            p.color[2] = 1 - p.temp / this.init_temp
             shapes.ball.draw( caller, uniforms, p.particle_transform, { ...materials.plastic, color: p.color } );
         }
     }
@@ -217,5 +215,10 @@ class ThermoParticle extends Particle {
         super(mass, radius, position, velocity, t);
 
         this.temp = 0;
+    }
+
+    update_transform(){
+        this.particle_transform = Mat4.translation(this.position[0], this.position[1], this.position[2])
+            .times(Mat4.scale(this.radius, this.radius, this.radius));
     }
 }
