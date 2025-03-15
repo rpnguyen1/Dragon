@@ -65,7 +65,7 @@ const DragonDemoBase = defs.DragonDemoBase =
           metal   : { shader: new defs.Phong_Shader2(), ambient: .2, diffusivity: 1, specularity:  0.1, colors: color( .9,.5,.9,1 ) },
           // Textures
           rgb : { shader: new defs.Fake_Bump_Map(), ambient: .1, texture: new Texture( "assets/rgb.jpg" ) },
-          sky : { shader: new defs.Fake_Bump_Map(), ambient: 2, texture: new Texture( "assets/doom_sky.jpeg" ) },
+          sky : { shader: new defs.Fake_Bump_Map(), ambient: 2, texture: new Texture( "assets/doom_sky.png" ) },
           grass : { shader: new defs.Fog_Shader(), ambient: .3, diffusivity: 10, specularity: 0.4, texture: new Texture( "assets/grass.jpg" ) },
           water : { shader: new defs.Scroll_Fog_Shader(), ambient: .5, diffusivity: 0.6, specularity: 2, 
                   texture: new Texture( "assets/water.png" ), 
