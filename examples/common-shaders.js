@@ -1240,6 +1240,74 @@ const Fog_Shader = defs.Fog_Shader =
 }
 
 
+const SkyShader = defs.SkyShader =
+  class SkyShader extends Phong_Shader {
+      vertex_glsl_code () {         // ********* VERTEX SHADER *********
+          return this.shared_glsl_code () + `
+        varying vec2 f_tex_coord;
+        attribute vec3 position, normal;                            // Position is expressed in object coordinates.
+        attribute vec2 texture_coord;
+
+        uniform mat4 model_transform;
+        uniform mat4 projection_camera_model_transform;
+
+        void main() {
+            gl_Position = projection_camera_model_transform * vec4( position, 1.0 );     // Move vertex to final space.
+                                              // The final normal vector in screen space.
+            N = normalize( mat3( model_transform ) * normal / squared_scale);
+
+            vertex_worldspace = ( model_transform * vec4( position, 1.0 ) ).xyz;
+                                              // Turn the per-vertex texture coordinate into an interpolated variable.
+            f_tex_coord = texture_coord;
+          } `;
+      }
+      fragment_glsl_code () {        // ********* FRAGMENT SHADER *********
+          return this.shared_glsl_code () + `
+        varying vec2 f_tex_coord;
+        uniform sampler2D texture;
+        uniform sampler2D distort;
+        uniform float animation_time;
+
+        void main() {
+          vec2 tilingFactor = vec2(1.0, 1.0);
+
+          vec2 f_tex_2 = f_tex_coord;
+          vec2 f_tex_2_distorted = f_tex_2 * tilingFactor;
+          float distortion_intensity = 0.015;
+          
+          vec2 f_tex_distort = vec2(f_tex_2_distorted.s - 0.02 * animation_time, f_tex_2_distorted.t - 0.01 * animation_time);
+          vec3 texColorDistort = texture2D(distort, f_tex_coord * f_tex_distort).rgb;
+          vec2 distortion = (texColorDistort.rg - 0.5) * distortion_intensity ;
+        
+          vec4 tex_color = texture2D( texture, f_tex_coord + distortion);       // Sample texture image in the correct place.
+            if( tex_color.w < .01 ) discard;
+                                                                     // Compute an initial (ambient) color:
+            gl_FragColor = vec4( ( tex_color.xyz + shape_color.xyz ) * ambient, shape_color.w * tex_color.w );
+                                                                     // Compute the final color with contributions from lights:
+            // gl_FragColor.xyz += phong_model_lights( normalize( N ), vertex_worldspace );
+          } `;
+      }
+      update_GPU (context, gpu_addresses, uniforms, model_transform, material) {
+          super.update_GPU (context, gpu_addresses, uniforms, model_transform, material);
+
+          if (material.texture && material.texture.ready) {
+              // Select texture unit 0 for the fragment shader Sampler2D uniform called "texture":
+              context.uniform1i (gpu_addresses.texture, 0);
+              // For this draw, use the texture image from correct the GPU buffer:
+              material.texture.activate (context, 0);
+          }
+
+          if (material.distort && material.distort.ready) {
+            // Select texture unit 0 for the fragment shader Sampler2D uniform called "texture":
+            context.uniform1i (gpu_addresses.distort, 1);
+            // For this draw, use the texture image from correct the GPU buffer:
+            material.distort.activate (context, 1);
+          }
+      
+          context.uniform1f(gpu_addresses.animation_time, uniforms.animation_time / 1000);
+      }
+  };
+
 const Grass = defs.Grass =
   class Grass extends Phong_Shader2 {
     fragment_glsl_code () {                            // ********* FRAGMENT SHADER *********

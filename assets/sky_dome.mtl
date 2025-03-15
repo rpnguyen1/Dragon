@@ -1,4 +1,4 @@
-# Blender 4.3.2 MTL File: 'skydome.blend'
+# Blender 4.0.2 MTL File: 'skydome.blend'
 # www.blender.org
 
 newmtl doom_sky01
@@ -9,4 +9,4 @@ Ks 0.500000 0.500000 0.500000
 Ni 1.500000
 d 1.000000
 illum 3
-map_Ke doom_sky.png
+map_Ke doom_sky.jpeg

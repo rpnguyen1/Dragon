@@ -31,7 +31,7 @@ const DragonDemoBase = defs.DragonDemoBase =
         
         
         //  ----- Set the Settings ----
-        this.settings.backgroundColor = [0.7, 0.7, 0.7, 1];
+        this.settings.backgroundColor = [0.0, 0.41, 0.58, 1]; // vec4 (0.0, 0.41, 0.58, 1.0)
         this.settings.LightColor = [0.95, 0.7, 0.45, 1];
         this.settings.FOV = 45;
         
@@ -66,7 +66,10 @@ const DragonDemoBase = defs.DragonDemoBase =
           metal   : { shader: new defs.Phong_Shader2(), ambient: .2, diffusivity: 1, specularity:  0.1, colors: color( .9,.5,.9,1 ) },
           // Textures
           rgb : { shader: new defs.Fake_Bump_Map(), ambient: .1, texture: new Texture( "assets/rgb.jpg" ) },
-          sky : { shader: new defs.Fake_Bump_Map(), ambient: 0.9, texture: new Texture( "assets/doom_sky.png" ) },
+          sky : { shader: new defs.SkyShader(), ambient: 0.9, texture: new Texture( "assets/doom_sky.jpeg" ), 
+            distort: new Texture( "assets/T_noise_01_normal.PNG" ), 
+          },
+          // sky : { shader: new defs.Fake_Bump_Map(), ambient: 0.9, texture: new Texture( "assets/doom_sky.png" ) },
           clouds : { shader: new defs.Clouds(), ambient: 2, texture: new Texture( "assets/Clouds.png" ) },
           grass : { shader: new defs.Grass(), ambient: .5, diffusivity: 1, specularity: 0.1, texture: new Texture( "assets/grass.jpg" ) },
           water : { shader: new defs.Scroll_Fog_Shader(), ambient: .5, diffusivity: 0.6, specularity: 2, 
