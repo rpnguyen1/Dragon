@@ -22,6 +22,7 @@ export class ThermoBox {
         this.spec_heat = 0.385; // Specific heat of copper
         this.mass_density = 8960;
         this.init_temp = temp;
+        this.melt_pt = temp;
 
         this.start_position = vec3(4, 4, 4)
         this.spacing = 7/this.layers // Length of the spring
@@ -40,15 +41,7 @@ export class ThermoBox {
         this.go_time = false;
         this.hit_counter = 0;
 
-        for(let l = 0; l<this.layers; l++) {
-            for(let i = 0; i<this.n; i++) {
-                for(let j = 0; j<this.m; j++) {
-                    if(l == 0 || l == this.layers - 1) this.U[l][i][j] = this.init_temp;
-                    else if(i == 0 || i == this.n - 1) this.U[l][i][j] = this.init_temp;
-                    else if(j == 0 || j == this.layers - 1) this.U[l][i][j] = this.init_temp;
-                }
-            }
-        }
+        this.set_dirichlet_boundary();
         
         this.init()
 
@@ -64,7 +57,6 @@ export class ThermoBox {
             this.particles[this.topology[0][this.n - 1][0]].position[1],
             this.particles[this.topology[0][0][0]].position[1],
         )
-
         this.min_x = Math.min(
             this.particles[this.topology[0][this.n - 1][this.m - 1]].position[0],
             this.particles[this.topology[0][0][this.m - 1]].position[0],
@@ -77,7 +69,6 @@ export class ThermoBox {
             this.particles[this.topology[0][this.n - 1][0]].position[0],
             this.particles[this.topology[0][0][0]].position[0],
         )
-
         this.min_z = Math.min(
             this.particles[this.topology[0][this.n - 1][this.m - 1]].position[2],
             this.particles[this.topology[0][0][this.m - 1]].position[2],
@@ -90,10 +81,6 @@ export class ThermoBox {
             this.particles[this.topology[0][this.n - 1][0]].position[2],
             this.particles[this.topology[0][0][0]].position[2],
         )
-
-        console.log(this.min_x, this.max_x)
-        console.log(this.min_y, this.max_y)
-        console.log(this.min_z, this.max_z)
     }
 
     init() {
@@ -236,6 +223,12 @@ export class ThermoBox {
             )
         );
 
+        this.set_dirichlet_boundary();
+
+        // console.log("UUUUU: ", this.U);
+    }
+
+    set_dirichlet_boundary() {
         // Set direlecht boundaries
         for(let l = 0; l<this.layers; l++) {
             for(let i = 0; i<this.n; i++) {
@@ -246,8 +239,6 @@ export class ThermoBox {
                 }
             }
         }
-
-        // console.log("UUUUU: ", this.U);
     }
 
     draw(caller, uniforms, materials, shapes) {
@@ -263,7 +254,8 @@ export class ThermoBox {
             let red = color(1, 0, 0, 1);
             let black = color(0.039, 0.01176, 0.0078, 1);
             let color_dir = red.minus(black);
-            let c = black.plus(color_dir.times(1 / this.init_temp * temp));
+            // if(this.init_temp < 1) console.log(1 / this.init_temp * temp)
+            let c = black.plus(color_dir.times(1 / this.melt_pt * temp));
             p.color = c;
             shapes.ball.draw( caller, uniforms, p.particle_transform, { ...materials.plastic, color: p.color } );
         }
