@@ -1,17 +1,7 @@
-# Blender 4.3.2 MTL File: 'dragon.blend'
+# Blender 4.0.2 MTL File: 'None'
 # www.blender.org
 
 newmtl BackSpikes
-Ns 200.000000
-Ka 1.000000 1.000000 1.000000
-Kd 1.000000 1.000000 1.000000
-Ks 0.500000 0.500000 0.500000
-Ke 0.000000 0.000000 0.000000
-Ni 1.500000
-d 1.000000
-illum 2
-
-newmtl Claws
 Ns 200.000000
 Ka 1.000000 1.000000 1.000000
 Kd 1.000000 1.000000 1.000000
@@ -130,16 +120,6 @@ Ni 1.500000
 d 1.000000
 illum 2
 map_Kd C:/Users/nguye/Downloads/eastern-dragon/textures/EDragon_Body.jpeg
-
-newmtl Tail
-Ns 200.000000
-Ka 1.000000 1.000000 1.000000
-Kd 1.000000 1.000000 1.000000
-Ks 0.500000 0.500000 0.500000
-Ke 0.000000 0.000000 0.000000
-Ni 1.500000
-d 1.000000
-illum 2
 
 newmtl TeethLower
 Ns 200.000000

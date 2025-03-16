@@ -148,29 +148,63 @@ export class Fabrik {
       // Start with a default model transform.
       let model_transform; 
 
+      // if (i == this.segments.length - 3 ){
+      //   model_transform = Mat4.scale(-0.7, -len / 2, -0.7);
+      // } else if (i == this.segments.length - 4 ){
+      //   model_transform = Mat4.scale(-0.8, -len / 2, -0.8);
+      // } else if (i == this.segments.length - 5 ){
+      //   model_transform = Mat4.scale(-0.9, -len / 2, -0.9);
+      // } else {
+      //   model_transform = Mat4.scale(-1, -len / 2, -1);
+      // }
       if (i == this.segments.length - 3 ){
-        model_transform = Mat4.scale(-0.7, -len / 2, -0.7);
+        model_transform = Mat4.scale(-0.7, -0.7, -len / 2);
       } else if (i == this.segments.length - 4 ){
-        model_transform = Mat4.scale(-0.8, -len / 2, -0.8);
+        model_transform = Mat4.scale(-0.8, -0.8, -len / 2);
       } else if (i == this.segments.length - 5 ){
-        model_transform = Mat4.scale(-0.9, -len / 2, -0.9);
+        model_transform = Mat4.scale(-0.9, -0.9, -len / 2);
       } else {
-        model_transform = Mat4.scale(-1, -len / 2, -1);
-
+        model_transform = Mat4.scale(-1, -1, -len / 2);
       }
       
       // Compute the direction vector from pos1 to pos2.
-      const p = pos1.minus(pos2).normalized();
-      let v = vec3(0, 1, 0);
-      if (Math.abs(v.cross(p).norm()) < 0.1) {
-        v = vec3(0, 0, 1);
-        model_transform = Mat4.scale(0.05, 0.05, len / 2);
-      }
-      const w = v.cross(p).normalized();
-      const theta = Math.acos(v.dot(p));
+      // const p = pos1.minus(pos2).normalized();
+      // let v = vec3(0, 1, 0);
+      // if (Math.abs(v.cross(p).norm()) < 0.1) {
+      //   v = vec3(0, 0, 1);
+      //   model_transform = Mat4.scale(0.05, 0.05, len / 2);
+      // }
+      // const w = v.cross(p).normalized();
+      // const theta = Math.acos(v.dot(p));
 
-      model_transform.pre_multiply(Mat4.rotation(theta, w[0], w[1], w[2]));
+      // model_transform.pre_multiply(Mat4.rotation(theta, w[0], w[1], w[2]));
+      // model_transform.pre_multiply(Mat4.translation(center[0], center[1], center[2]));
+
+
+
+      const upVector = vec3(0, 1, 0);
+      const forward = pos2.minus(pos1).normalized(); // Direction from p1 to p2
+      const right = upVector.cross(forward).normalized(); // Right vector
+      const up = forward.cross(right).normalized(); // Re-calculate up to ensure orthogonality
+
+      // Construct rotation matrix
+      let rotationMatrix = Mat4.identity();
+      console.log(rotationMatrix);
+      rotationMatrix[0][0] = right[0];
+      rotationMatrix[1][0] = right[1];
+      rotationMatrix[2][0] = right[2];
+
+      rotationMatrix[0][1] = up[0];
+      rotationMatrix[1][1] = up[1];
+      rotationMatrix[2][1] = up[2];
+
+      rotationMatrix[0][2] = forward[0];
+      rotationMatrix[1][2] = forward[1];
+      rotationMatrix[2][2] = forward[2];
+
+      model_transform.pre_multiply(rotationMatrix);
       model_transform.pre_multiply(Mat4.translation(center[0], center[1], center[2]));
+
       if (i == this.segments.length - 2 ){
         shapes.head.draw(caller, uniforms, model_transform, materials.dragon);
 
