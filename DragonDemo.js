@@ -45,60 +45,6 @@ const DragonDemoBase = defs.DragonDemoBase =
         const row_operation_2    = (s,p)   => vec3(    -1,2*s-1,Math.random()/2 );
         const column_operation_2 = (t,p,s) => vec3( 2*t-1,2*s-1,Math.random()/2 );
 
-//         const rows = 100;
-//         const columns = 100;
-//         const heightScale = 50; // Adjust for height
-
-// // 1. Generate Raw Random Heights
-// const rawHeights = [];
-// for (let i = 0; i < rows; i++) {
-//     rawHeights[i] = [];
-//     for (let j = 0; j < columns; j++) {
-//         rawHeights[i][j] = Math.random() * heightScale;
-//     }
-// }
-
-// // 2. Apply Moving Average
-// const smoothedHeights = [];
-// for (let i = 0; i < rows; i++) {
-//     smoothedHeights[i] = [];
-//     for (let j = 0; j < columns; j++) {
-//         let sum = 0;
-//         let count = 0;
-
-//         // Collect neighboring heights
-//         for (let ni = i - 1; ni <= i + 1; ni++) {
-//             for (let nj = j - 1; nj <= j + 1; nj++) {
-//                 if (ni >= 0 && ni < rows && nj >= 0 && nj < columns) {
-//                     sum += rawHeights[ni][nj];
-//                     count++;
-//                 }
-//             }
-//         }
-
-//         smoothedHeights[i][j] = sum / count;
-//     }
-// }
-
-// const row_operation_2 = (s, p) => {
-//     const x = 2 * s - 1;
-//     const i = Math.floor(s * (rows - 1)); // Map s to row index
-//     const j = 0; //First column
-//     const y = smoothedHeights[i][j];
-//     const z = 0;
-
-//     return vec3(x, y, z);
-// };
-
-// const column_operation_2 = (t, p, s) => {
-//     const x = 2 * t - 1;
-//     const i = Math.floor(s * (rows - 1)); // Map s to row index.
-//     const j = Math.floor(t * (columns - 1)); //map t to column index.
-//     const y = smoothedHeights[i][j];
-//     const z = 0;
-
-//     return vec3(x, y, z);
-// };
         
         // *** Shapes: ***At the beginning of our program, load one of each of these shape
         // definitions onto the GPU.
@@ -495,7 +441,7 @@ export class DragonDemo extends DragonDemoBase
     
     // this.particleSystem.setParticle(0, 10, [point[0], point[1], point[2], 0, 0, 0]); // Dragon follows spline
     // this.particleSystem.draw(caller, this.uniforms, this.shapes, this.materials);
-    this.dragon1.draw(caller, this.uniforms, point);
+    // this.dragon1.draw(caller, this.uniforms, point);
 
     // this.dragon1.draw(caller, this.uniforms, fabrik_target);
 
