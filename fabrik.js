@@ -212,6 +212,11 @@ export class Fabrik {
 
       } else if (i == 0 ){
         shapes.tail.draw(caller, uniforms, model_transform, materials.dragon);
+      } else if (i == this.segments.length - 4){
+        // shapes.leg.draw(caller, uniforms, model_transform, materials.dragon);
+        shapes.body.draw(caller, uniforms, model_transform, materials.dragon);
+
+
       } else {
         shapes.body.draw(caller, uniforms, model_transform, materials.dragon);
       }
