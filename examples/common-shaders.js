@@ -1438,7 +1438,7 @@ const Scroll_Fog_Shader = defs.Scroll_Fog_Shader =
       
           //Blue for depth distance
           #define LOG2 1.442695
-          float fogDensity = 0.003;
+          float fogDensity = 0.009;
           float fogDistance = length(camera_center - vertex_worldspace);
           float fogAmount = 1. - exp2(-fogDensity * fogDensity * fogDistance * fogDistance * LOG2);
           fogAmount = clamp(fogAmount, 0., 1.);
@@ -1609,6 +1609,16 @@ fragment_glsl_code () {        // ********* FRAGMENT SHADER *********
       gl_FragColor = vec4( ( min(tex_color.xyz * (tex_color2.xyz + tex_color2.xyz), 1.0)  + shape_color.xyz ) * ambient, shape_color.w * alpha);
                                                                // Compute the final color with contributions from lights:
       gl_FragColor.xyz += phong_model_lights( normalize( N ), vertex_worldspace );
+
+
+                //Blue for depth distance
+          #define LOG2 1.442695
+          float fogDensity = 0.003;
+          float fogDistance = length(camera_center - vertex_worldspace);
+          float fogAmount = 1. - exp2(-fogDensity * fogDensity * fogDistance * fogDistance * LOG2);
+          fogAmount = clamp(fogAmount, 0., 1.);
+          vec4 fog_color = vec4 (0.0, 0.41, 0.58, 1.0);
+          gl_FragColor = mix(gl_FragColor, fog_color, fogAmount);
     } `;
 }
 static light_source (position, color, size) {

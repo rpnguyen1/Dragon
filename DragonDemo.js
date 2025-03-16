@@ -44,9 +44,9 @@ const DragonDemoBase = defs.DragonDemoBase =
         const row_operation_2    = (s,p)   => vec3(    -1,2*s-1,Math.random()/2 );
         const column_operation_2 = (t,p,s) => vec3( 2*t-1,2*s-1,Math.random()/2 );
 
-//         const rows = 10;
-// const columns = 10;
-// const heightScale = 2; // Adjust for height
+//         const rows = 100;
+//         const columns = 100;
+//         const heightScale = 50; // Adjust for height
 
 // // 1. Generate Raw Random Heights
 // const rawHeights = [];
@@ -115,8 +115,9 @@ const DragonDemoBase = defs.DragonDemoBase =
           'sky' : new defs.Shape_From_File("assets/sky_dome.obj"),
           'clouds' : new defs.Shape_From_File("assets/sky_dome_cloud.obj"),
           'LargeRock1' : new defs.Shape_From_File("assets/LargeRock1.obj"),
+          'island' : new defs.Shape_From_File("assets/island.obj"),
           'terrain': new defs.terrain(10, 10, 50, 0.1),
-          'sheet2': new defs.Grid_Patch( 100, 100, row_operation_2, column_operation_2 )
+          'sheet2': new defs.Grid_Patch( 100, 100, row_operation_2, column_operation_2 ),
         };
 
         // *** Materials: ***  Basic_Shader() Phong_Shader() Textured_Phong() Fake_Bump_Map()
@@ -127,12 +128,12 @@ const DragonDemoBase = defs.DragonDemoBase =
           // Textures
           rgb : { shader: new defs.Fake_Bump_Map(), ambient: .1, texture: new Texture( "assets/rgb.jpg" ) },
           grid : { shader: new defs.Fake_Bump_Map(), ambient: .1, texture: new Texture( "assets/grid.png" ) },
-          sky : { shader: new defs.SkyShader(), ambient: 0.9, texture: new Texture( "assets/doom_sky.jpeg" ), 
+          sky : { shader: new defs.SkyShader(), ambient: 1, texture: new Texture( "assets/doom_sky.jpeg" ), 
             distort: new Texture( "assets/T_noise_01_normal.PNG" ), 
           },
-          sky : { shader: new defs.SkyShader(), ambient: 0.9, texture: new Texture( "assets/doom_sky.jpeg" ), 
-            distort: new Texture( "assets/T_noise_01_normal.PNG" ), 
-          },
+          // sky : { shader: new defs.SkyShader(), ambient: 0.9, texture: new Texture( "assets/doom_sky.jpeg" ), 
+          //   distort: new Texture( "assets/T_noise_01_normal.PNG" ), 
+          // },
           // sky : { shader: new defs.Fake_Bump_Map(), ambient: 0.9, texture: new Texture( "assets/doom_sky.png" ) },
           clouds : { shader: new defs.Clouds(), ambient: 2, texture: new Texture( "assets/Clouds.png" ) },
           grass : { shader: new defs.Grass(), ambient: .5, diffusivity: 1, specularity: 0.1, texture: new Texture( "assets/grass.jpg" ) },
@@ -153,9 +154,17 @@ const DragonDemoBase = defs.DragonDemoBase =
                   albedoMap: new Texture( "assets/LargeRock1_Bake1_pbr_diffuse.PNG" ), 
                   normalMap: new Texture( "assets/LargeRock1_Bake1_pbr_normal.PNG" ), 
                 },
+          Rock : { shader: new defs.PhongNShader(), ambient: .2, diffusivity: 1, specularity: 0.5,
+                  albedoMap: new Texture( "assets/MaterialGrassMat_diffuse.PNG" ), 
+                  normalMap: new Texture( "assets/MaterialRockMat_normal.PNG" ), 
+                },
           grass2 : { shader: new defs.Grass2(), ambient: .5, diffusivity: 1, specularity: 0.1,
                   albedoMap: new Texture( "assets/MaterialGrassMat_diffuse.PNG" ), 
                   normalMap: new Texture( "assets/MaterialGrassMat_diffuse.PNG" ), 
+                },
+          island : { shader: new defs.PhongNShader(), ambient: .5, diffusivity: 1, specularity: 0.5,
+                  albedoMap: new Texture( "assets/island_baseColor.jpeg" ), 
+                  normalMap: new Texture( "assets/island_normal.png" ), 
                 },
 
           dust : { shader: new defs.Textured_Phong(), ambient: .5, texture: new Texture( "assets/T_Dust_Particle_D.PNG" ) },
@@ -318,7 +327,7 @@ const DragonDemoBase = defs.DragonDemoBase =
         // this._debug_fps = caller.fps;
 
         // draw axis arrows.
-        this.shapes.axis.draw(caller, this.uniforms, Mat4.identity(), this.materials.rgb);
+        // this.shapes.axis.draw(caller, this.uniforms, Mat4.identity(), this.materials.rgb);
       }
     }
 
@@ -344,53 +353,33 @@ export class DragonDemo extends DragonDemoBase
     this.uniforms.projection_transform = Mat4.perspective( this.settings.FOV * Math.PI/180, caller.width/caller.height, 1, 1000 );
 
     // !!! Draw ground
-    let floor_transform = Mat4.translation(150, 1, 0).times(Mat4.scale(50, 0.01, 50));
+    // let floor_transform = Mat4.translation(150, 1, 0).times(Mat4.scale(50, 0.01, 50));
+    let floor_transform = Mat4.translation(1, 1, 150).times(Mat4.scale(100, 0.01, 100));
     this.shapes.box.draw( caller, this.uniforms, floor_transform, this.materials.water);
-    // this.shapes.box.draw( caller, this.uniforms, Mat4.translation(0, 0, 0).times(Mat4.scale(1000, 0.01, 1000)), this.materials.grass);
-    this.shapes.sheet2.draw( caller, this.uniforms, Mat4.translation(0, 0, 0).times(Mat4.rotation(1.5, 1, 0, 0)).times(Mat4.scale(100,100, 100)), this.materials.grass);
-    // Cubefsd
+    this.shapes.box.draw( caller, this.uniforms, Mat4.translation(0, 0, 0).times(Mat4.scale(1000, 0.01, 1000)), this.materials.grass);
 
-    const terrainTransform = Mat4.translation(0, 0, 0).times(Mat4.scale(200, 1, 200));
-    this.shapes.terrain.draw(caller, this.uniforms, terrainTransform, this.materials.grass2);
+    this.shapes.island.draw( caller, this.uniforms, Mat4.translation(-50, 1, 150).times(Mat4.scale(100, 200, 100)), this.materials.island);
 
+    this.shapes.sheet2.draw( caller, this.uniforms, Mat4.translation(0, 0, 0).times(Mat4.rotation(1.5, 1, 0, 0)).times(Mat4.scale(1000,1000, 10)), this.materials.Rock);
 
-    // Generate height map
-    // const width = 20;
-    // const height = 20;
-    // const scale = 0.05; // Adjust for frequency of hills
-    // const heightMap = generateHeightMap(width, height, scale);
-
-    // // Create Grid_Patch terrain
-    // if (!this.shapes.terrain) {
-    //     const heightFunc = (x, z) => heightMap[Math.floor(z)][Math.floor(x)];
-    //     const nextRowFunction = (r, previous) => vec3(0, heightFunc(0, r), r);
-    //     const nextColumnFunction = (c, previous, r) => vec3(c, heightFunc(c, r), r);
-
-    //     this.shapes.terrain = new defs.Grid_Patch(height, width, nextRowFunction, nextColumnFunction);
-    // }
-
-    // // Draw terrain
-    // const terrainTransform = Mat4.translation(-width / 2, 0, -height / 2).times(Mat4.scale(100, 100, 100));
-    // this.shapes.terrain.draw(caller, this.uniforms, terrainTransform, this.materials.grid);
 
 
     const sky_pos = Mat4.extractPositionFromMatrix(this.uniforms.camera_transform);
     // this.shapes.box.draw( caller, this.uniforms, Mat4.translation(0, 1, 0).times(Mat4.scale(1, 1, 1)), this.materials.Brick );
     // this.shapes.box.draw( caller, this.uniforms, Mat4.translation(-3, 1, -3).times(Mat4.scale(50, 10, 1)), this.materials.gold );
 
-
     this.shapes.sky.draw( caller, this.uniforms, Mat4.translation(sky_pos[0], sky_pos[1]+300, sky_pos[2]).times(Mat4.scale(400, 400, 400)), this.materials.sky );
     
     // this.shapes.sky.draw( caller, this.uniforms, Mat4.translation(sky_pos[0], sky_pos[1], sky_pos[2]).times(Mat4.scale(400, 400, 400)), this.materials.grass );
     // this.shapes.clouds.draw( caller, this.uniforms, Mat4.translation(sky_pos[0], sky_pos[1], sky_pos[2]).times(Mat4.scale(100, 100, 100)), this.materials.clouds );
-    // this.shapes.box.draw( caller, this.uniforms, Mat4.translation(-5, 50, -10).times(Mat4.scale(50, 100, 1)), this.materials.gold );
-    // this.shapes.box.draw( caller, this.uniforms, Mat4.translation(-5, 50, 80).times(Mat4.scale(50, 100, 1)), this.materials.Brick );
+    // this.shapes.box.draw( caller, this.uniforms, Mat4.translation(-5, 10, -10).times(Mat4.scale(50, 20, 1)), this.materials.gold );
+    // this.shapes.box.draw( caller, this.uniforms, Mat4.translation(-5, 1, 80).times(Mat4.scale(3, 2, 1)), this.materials.Brick );
     
     // texture testing
     // this.shapes.square.draw( caller, this.uniforms, Mat4.translation(6, 1, 0).times(Mat4.scale(1, 1, 1)), this.materials.explosion);
-    // this.shapes.LargeRock1.draw( caller, this.uniforms, Mat4.translation(106, 1, 0).times(Mat4.scale(20, 20, 20)), this.materials.Brick);
-    // this.shapes.LargeRock1.draw( caller, this.uniforms, Mat4.translation(150, 1, 20).times(Mat4.scale(30, 30, 30)), this.materials.Brick);
-    // this.shapes.LargeRock1.draw( caller, this.uniforms, Mat4.translation(180, 1, -40).times(Mat4.scale(40, 40, 40)), this.materials.Brick);
+    this.shapes.LargeRock1.draw( caller, this.uniforms, Mat4.translation(106, 1, 0).times(Mat4.scale(20, 20, 20)), this.materials.Brick);
+    this.shapes.LargeRock1.draw( caller, this.uniforms, Mat4.translation(150, 1, 20).times(Mat4.scale(30, 30, 30)), this.materials.Brick);
+    this.shapes.LargeRock1.draw( caller, this.uniforms, Mat4.translation(180, 1, -40).times(Mat4.scale(40, 40, 40)), this.materials.Brick);
 
 
     const rocks = [
@@ -480,6 +469,8 @@ export class DragonDemo extends DragonDemoBase
     let y = final_transform[1][3];
     let z = final_transform[2][3]; // could just use tovec3 to convert matrix to vector3
     const fabrik_target = vec3(x, y, z);
+
+    // this.uniforms.lights.push(defs.Phong_Shader.light_source( vec4(x, y, z, 0.0), color( 1,1,1,1 ), 1000000 ) )
 
     // this.settings.FOV
     
