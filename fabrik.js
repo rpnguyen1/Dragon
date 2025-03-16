@@ -163,6 +163,8 @@ export class Fabrik {
         model_transform = Mat4.scale(-0.8, -0.8, -len / 2);
       } else if (i == this.segments.length - 5 ){
         model_transform = Mat4.scale(-0.9, -0.9, -len / 2);
+      } else if (i == 1 ){
+        model_transform = Mat4.scale(-0.7, -0.7, -len / 2);
       } else {
         model_transform = Mat4.scale(-1, -1, -len / 2);
       }
@@ -189,7 +191,7 @@ export class Fabrik {
 
       // Construct rotation matrix
       let rotationMatrix = Mat4.identity();
-      console.log(rotationMatrix);
+      // console.log(rotationMatrix);
       rotationMatrix[0][0] = right[0];
       rotationMatrix[1][0] = right[1];
       rotationMatrix[2][0] = right[2];
