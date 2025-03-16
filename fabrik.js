@@ -163,8 +163,16 @@ export class Fabrik {
         model_transform = Mat4.scale(-0.8, -0.8, -len / 2);
       } else if (i == this.segments.length - 5 ){
         model_transform = Mat4.scale(-0.9, -0.9, -len / 2);
-      } else if (i == 1 ){
+      } else if (i == 4 ){
+        model_transform = Mat4.scale(-0.75, -0.75, -len / 2);
+      } else if (i == 3 ){
         model_transform = Mat4.scale(-0.7, -0.7, -len / 2);
+      } else if (i == 2 ){
+        model_transform = Mat4.scale(-0.65, -0.65, -len / 2);
+      } else if (i == 1 ){
+        model_transform = Mat4.scale(-0.6, -0.6, -len / 2);
+      } else if (i == 0 ){
+        model_transform = Mat4.scale(-0.7, -0.7, -len / 1.5);
       } else {
         model_transform = Mat4.scale(-1, -1, -len / 2);
       }
@@ -212,8 +220,19 @@ export class Fabrik {
 
       } else if (i == 0 ){
         shapes.tail.draw(caller, uniforms, model_transform, materials.dragon);
-      } else if (i == this.segments.length - 4){
-        // shapes.leg.draw(caller, uniforms, model_transform, materials.drsdagon);
+      } else if (i == this.segments.length - 6){
+        // legs 
+        let leg_model_transform = Mat4.translation(0,-2,0).times(Mat4.scale(-1.6, -1.6, -1.6));
+        leg_model_transform.pre_multiply(rotationMatrix);
+        leg_model_transform.pre_multiply(Mat4.translation(center[0], center[1], center[2]));
+        shapes.leg.draw(caller, uniforms, leg_model_transform, materials.dragon);
+        shapes.body.draw(caller, uniforms, model_transform, materials.dragon);
+      } else if (i == this.segments.length - 14){
+        // legs 
+        let leg_model_transform = Mat4.translation(0,-2,0).times(Mat4.scale(-1.6, -1.6, -1.6));
+        leg_model_transform.pre_multiply(rotationMatrix);
+        leg_model_transform.pre_multiply(Mat4.translation(center[0], center[1], center[2]));
+        shapes.leg.draw(caller, uniforms, leg_model_transform, materials.dragon);
         shapes.body.draw(caller, uniforms, model_transform, materials.dragon);
 
 
