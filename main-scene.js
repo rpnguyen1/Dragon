@@ -47,7 +47,7 @@ Object.assign (defs,
                {DragonDemo}
 );
 
-// ******************** SELECT THE DEMO TO DISPLAY:
+// ******************** SELECT THE DEMO TO DISPLAY:f
 
 const main_scene        = DragonDemo;
 const additional_scenes = [];

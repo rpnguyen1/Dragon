@@ -437,7 +437,7 @@ const Component = tiny.Component =
 
             this.use_blur = false;
             this.use_grayscale = false;
-            this.use_bloom = false;
+            this.use_bloom = true;
             this.use_chromatic_aberration = false;
       }
       static types_used_before = new Set ();

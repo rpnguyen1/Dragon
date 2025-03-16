@@ -359,6 +359,18 @@ const Movement_Controls = defs.Movement_Controls =
           this.key_triggered_button("Attach to global camera", ["Shift", "R"],
                                      () => { this.will_take_over_uniforms = true; }, "blue");
           this.new_line();
+        //   this.live_string(box => {
+        //     const moving = this.thrust.norm() > 0;
+        //     let direction = "";
+        //     if (this.thrust[0] > 0) direction += "Left ";
+        //     if (this.thrust[0] < 0) direction += "Right ";
+        //     if (this.thrust[1] > 0) direction += "Down ";
+        //     if (this.thrust[1] < 0) direction += "Up ";
+        //     if (this.thrust[2] > 0) direction += "Forward ";
+        //     if (this.thrust[2] < 0) direction += "Backward ";
+        
+        //     box.textContent = moving ? `Moving: ${direction}` : "Stationary";
+        // });
       }
       first_person_flyaround(radians_per_frame, meters_per_frame, leeway = 70) {
           // Compare mouse's location to all four corners of a dead box:
@@ -423,6 +435,9 @@ const Movement_Controls = defs.Movement_Controls =
               this.reset();
               this.will_take_over_uniforms = false;
           }
+
+        //   this.thrust[2] = 1; // Or -1, if you want to move backward by default
+
           // Move in first-person.  Scale the normal camera aiming speed by dt for smoothness:
           this.first_person_flyaround(dt * r, dt * m);
           // Also apply third-person "arcball" camera mode if a mouse drag is occurring:

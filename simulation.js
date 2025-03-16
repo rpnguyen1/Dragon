@@ -92,7 +92,7 @@ const Part_two_spring_base = defs.Part_two_spring_base =
 
 // Spring class 
 class Particle{
-  constructor(mass, position, velocity, force, model, material){
+  constructor(mass, position, velocity, force, model, material, scale, billboard, render){
     this.mass = mass;
     this.position = position;
     this.velocity = velocity;
@@ -100,19 +100,29 @@ class Particle{
     this.previousPosition = null;
     this.model = model;
     this.material = material;
+    this.scale = scale || 0.2;
+    this.billboard = billboard || false;
+    this.render = render || false;
+    this.collided = false;
   }
-  update(mass, position, velocity, force, model, material){
+  update(mass, position, velocity, force, model, material, scale, billboard, render){
     this.mass = mass;
     this.position = position;
     this.velocity = velocity;
     this.force = force;
     this.model = model;
-    this.material = material
+    this.material = material;
+    this.scale = scale || 0.2;
+    this.billboard = billboard || false;
+    this.render = render || false;
+  }
+  updateMaterial(material){
+    this.material = material;
   }
 }
 
 class Spring{
-  constructor(particle_i, particle_j, ks, kd, l, force, model, material, doScale){
+  constructor(particle_i, particle_j, ks, kd, l, force, model, material, doScale, maxLength){
     this.pi = particle_i;
     this.pj = particle_j;
     this.ks = ks;
@@ -122,9 +132,11 @@ class Spring{
     this.model = model;
     this.material = material;
     this.doScale = doScale;
+    this.maxLength = maxLength || Infinity; // Default to no max length
+
   }
 
-  update(particle_i, particle_j, ks, kd, l, model, material, doScale){
+  update(particle_i, particle_j, ks, kd, l, model, material, doScale, maxLength){
     this.pi = particle_i;
     this.pj = particle_j;
     this.ks = ks;
@@ -133,6 +145,7 @@ class Spring{
     this.model = model;
     this.material = material;
     this.doScale = doScale;
+    this.maxLength = maxLength || Infinity; // Default to no max length
   }
 
 }
@@ -176,10 +189,10 @@ export class SpringMass {
 
 // create particles <Number of Particles>
   createParticle(num){
-    for (let i = 0; i < num; i++) {
+    for (let i = 0; i < num; i++) { // mass, position, velocity, force, model, material, scale
       this.particles.push(
         // create a default particle?
-        new Particle(1, [0, 0, 0], [0, 0, 0], [0, 0, 0], null, null)
+        new Particle(1, [0, 0, 0], [0, 0, 0], [0, 0, 0], null, null, 0.2)
         // mass: 1,  // default mass
         // position: [0, 0, 0], // default position
         // velocity: [0, 0, 0], // default velocity
@@ -188,13 +201,23 @@ export class SpringMass {
   }
 
 // particle <index> <mass> <x y z vx vy vz>
-  setParticle(id, mass, transform, model, material){
+  setParticle(id, mass, transform, model, material, scale, billboard, render){
     if (this.particles[id]) {
       this.particles[id].mass = mass;
       this.particles[id].position = transform.slice(0, 3); // Position
       this.particles[id].velocity = transform.slice(3, 6); // Velocity
-      this.model = model;
-      this.material = material;
+      this.particles[id].model = model;
+      this.particles[id].material = material;
+      this.particles[id].scale = scale;
+      this.particles[id].billboard = billboard;
+      this.particles[id].render = render;
+    } else {
+      console.log("Invalid particle index");
+    }
+  }
+  setParticleMaterial(id, material){
+    if (this.particles[id]) {
+      this.particles[id].material = material;
     } else {
       console.log("Invalid particle index");
     }
@@ -222,20 +245,13 @@ export class SpringMass {
   }
 
   //link <sindex> <pindex1> <pindex2> <ks> <kd> <length>
-  link(sid, pid1, pid2, ks, kd, length, model, material, doScale){
+  link(sid, pid1, pid2, ks, kd, length, model, material, doScale, maxLength){
     if (this.springs[sid]) {
-      this.springs[sid].update(pid1,pid2,ks,kd,length, model, material, doScale);
-      // this.springs[sid] = {
-      //   pid1,
-      //   pid2,
-      //   ks,
-      //   kd,
-      //   length
-      // };
+        this.springs[sid].update(pid1,pid2,ks,kd,length, model, material, doScale, maxLength);
     } else {
-      console.log("Invalid spring index");
+        console.log("Invalid spring index");
     }
-  }
+}
 
 update(t_step) {
   this.groundLevel = 0.1;
@@ -262,6 +278,30 @@ update(t_step) {
       pB.position[2] - pA.position[2]
     ];
     let length = Math.hypot(...delta);
+    
+    // Apply max length constraint
+    if (length > spring.maxLength) {
+      length = spring.maxLength;
+      // recompute direction
+      if (length === 0) return;
+      let direction = delta.map(d => d / Math.hypot(...delta));
+      for(let i = 0; i<3; i++){
+          delta[i] = direction[i] * length;
+      }
+      pB.position[0] = pA.position[0] + delta[0];
+      pB.position[1] = pA.position[1] + delta[1];
+      pB.position[2] = pA.position[2] + delta[2];
+
+      //recompute delta
+      delta = [
+          pB.position[0] - pA.position[0],
+          pB.position[1] - pA.position[1],
+          pB.position[2] - pA.position[2]
+      ];
+  }
+
+
+
     if (length === 0) return;
     let direction = delta.map(d => d / length);
 
@@ -354,10 +394,16 @@ update(t_step) {
     
     // 7. Collision impulse: if at ground and moving downward, reflect vertical velocity.
     if (particle.position[1] === this.groundLevel && particle.velocity[1] < 0) {
-      particle.velocity[1] = -this.restitution * particle.velocity[1];
+      particle.collided = true;
+      // particle.velocity[1] = -this.restitution * particle.velocity[1];
+      particle.velocity[1] = -0 * particle.velocity[1];
       // Apply friction to horizontal velocities:
-      particle.velocity[0] *= (1 - this.frictionCoeff * t_step);
-      particle.velocity[2] *= (1 - this.frictionCoeff * t_step);
+      // particle.velocity[0] *= (1 - this.frictionCoeff * t_step);
+      // particle.velocity[2] *= (1 - this.frictionCoeff * t_step);
+      particle.velocity[0] *= 0.98;
+      particle.velocity[2] *= 0.98;
+    } else{
+      particle.collided = false;
     }
   });
 }
@@ -496,26 +542,37 @@ resolveGroundCollisions(t_step) {
     }
 
 
-    // const blue = color( 0,0,1,1 ), white = color( 1,1,1,1 );
+    const blue = color( 0,0,1,1 ), white = color( 1,1,1,1 );
     // Draw particles
-    // for (let particle of this.particles) {
-    //   const post = particle.position; 
-    //   const pos = vec3(post[0],post[1],post[2]); 
-    //   let model_transform = Mat4.scale(0.2, 0.2, 0.2);
-    //   model_transform.pre_multiply(Mat4.translation(pos[0], pos[1], pos[2]));
+    for (let particle of this.particles) {
+      if (!particle.render) {
+        continue;
+      }
+      const post = particle.position; 
+      const pos = vec3(post[0],post[1],post[2]); 
+      let model_transform = Mat4.scale(particle.scale, particle.scale, particle.scale);
+      
+      // model_transform.pre_multiply(Mat4.translation(pos[0], pos[1], pos[2]));
       // let transform = Mat4.translation(...particle.position)
-      //   .times(Mat4.scale(0.1, 0.1, 0.1)); // Adjust size if needed
-      // if (particle.model == null) {
-        // shapes.ball.draw(caller, uniforms, model_transform, { ...materials.metal, color: blue });        
-      // } else{
-        // particle.model.draw(caller, uniforms, model_transform, particle.material);        
-      // }
+      //   .times(Mat4.scale(2.1, 2.1, 2.1)); // Adjust size if needed
 
-    // }
+      if (particle.billboard){
+        model_transform.pre_multiply(Mat4.inverse(Mat4.look_at(pos, Mat4.extractPositionFromMatrix(uniforms.camera_transform), vec3(0,1,0))));
+      } else {
+        model_transform.pre_multiply(Mat4.translation(pos[0], pos[1], pos[2]));
+
+      }
+      if (particle.model == null) {
+        shapes.ball.draw(caller, uniforms, model_transform, { ...materials.metal, color: blue });        
+      } else{
+        particle.model.draw(caller, uniforms, model_transform, particle.material);        
+      }
+
+    }
 
     // Draw springs
     for (let spring of this.springs) {
-      if (spring.pi !== -1 && spring.pj !== -1 && spring.pi !== 0 && spring.pj !== 0) {
+      if (spring.pi !== -1 && spring.pj !== -1) {
         let p1t = this.particles[spring.pi].position;
         let p2t = this.particles[spring.pj].position;
         let p1 = vec3(p1t[0], p1t[1], p1t[2]);
@@ -546,7 +603,7 @@ resolveGroundCollisions(t_step) {
         model_transform.pre_multiply(Mat4.translation(center[0], center[1], center[2]));
 
         if (spring.model == null) {
-          // shapes.cylinder.draw(caller, uniforms, model_transform, { ...materials.metal, color: white });
+          shapes.ball.draw(caller, uniforms, model_transform, { ...materials.metal, color: white });        
         } else{
           spring.model.draw(caller, uniforms, model_transform, spring.material);
 
